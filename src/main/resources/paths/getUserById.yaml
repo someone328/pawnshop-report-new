@@ -1,0 +1,26 @@
+get:
+  summary: Получить пользователя по Id
+  operationId: getUserById
+  tags:
+    - user
+  parameters:
+    - name: userId
+      in: path
+      required: true
+      description: Id пользователя
+      schema:
+        type: string
+  responses:
+    200:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../model/User.yaml
+          example:
+            id: 098F6BCD4621D373CADE4E832627B4F6
+            name: Вася Пупкин
+            login: '9169321494'
+            roles:
+              - employee
+              - admin

@@ -1,0 +1,42 @@
+openapi: 3.0.0
+info:
+  title: "API"
+  version: "1.0.0"
+  contact:
+    name: Denis Ryleev
+    email: ryleew@yandex.ru
+  description: Модуль отчетов для сети ломбардов
+servers:
+  - url: http://localhost/{basePath}
+    variables:
+      basePath:
+        default: v1
+paths:
+  x-apiVersion: v1
+  /:
+    get:
+      operationId: getMetadata
+      summary: Get metadata from the root of the API
+      tags: [ 'Metadata' ]
+      responses:
+        '200':
+          description: Success
+  /report:
+    post:
+      summary: Сохранение отчета
+      operationId: saveReport
+      tags: 
+        - report
+      requestBody:
+        content:
+          'appliocation/json':
+            schema: 
+              $ref: ./model/Report.yaml
+        required: true
+      responses:
+        201:
+          description: Success
+  /user:
+    $ref: './paths/getAllUsers.yaml'
+  /user/{userId}:
+    $ref: './paths/getUserById.yaml'

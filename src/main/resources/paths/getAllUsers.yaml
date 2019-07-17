@@ -1,0 +1,18 @@
+get:
+  summary: Получить всех пользователей
+  operationId: getAllUsers
+  tags:
+    - user
+  responses:
+    '200':
+      description: Success
+      content:
+        'application/json':
+          schema:
+            type: array
+            items:
+              $ref: ../model/User.yaml
+    '401':
+      description: Unauthorised
+    '500':
+      description: Unknown error

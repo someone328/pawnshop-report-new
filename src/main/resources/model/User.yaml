@@ -1,0 +1,21 @@
+description: |-
+  Пользователь системы
+required:
+  - id
+  - name
+properties:
+  id:
+    type: string
+    x-jpa:
+      type: javax.persistence.Id
+  name:
+    type: string
+  login:
+    description: Для логина используется номер телефона в формате 10 цифр
+    type: string
+  department:
+    type: array
+    items:
+      $ref: ./Department.yaml
+      x-jpa:
+        type: javax.persistance.ManyToOne                                   
