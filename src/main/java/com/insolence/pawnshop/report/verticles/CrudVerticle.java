@@ -26,6 +26,7 @@ public class CrudVerticle extends AbstractVerticle {
         .retry()
         .subscribe(r -> {}, error -> log.error("crud error", error));
 
+    
     vertx
         .eventBus()
         .consumer("crud.get")
@@ -35,6 +36,7 @@ public class CrudVerticle extends AbstractVerticle {
                 client
                     .findBatch(message.headers().get("objectType"), (JsonObject) message.body())
                     .toFlowable()
+                    .map(object -> {object.remove("password"); return object;})
                     .collectInto(new JsonArray(), (array, object) -> array.add(object))
                     .flatMapPublisher(array -> message.rxReply(array).toFlowable()))
         .retry()

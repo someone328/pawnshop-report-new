@@ -19,11 +19,15 @@ public class LoginVerticle extends AbstractVerticle {
         .eventBus()
         .consumer("login")
         .toFlowable()
-        .flatMap(
+        .flatMapSingle(
             message ->
                 client
-                    .rxCount(USER.name().toLowerCase(), (JsonObject) message.body())
-                    .flatMapPublisher(res -> message.rxReply(res).toFlowable()))
+                    .rxFindOne(
+                        USER.name().toLowerCase(),
+                        (JsonObject) message.body(),
+                        new JsonObject().put("password", false))
+                    .doOnComplete(() -> message.fail(401, "User does not exists"))
+                    .flatMapSingle(user -> message.rxReply(user)))
         .retry()
         .subscribe();
   }

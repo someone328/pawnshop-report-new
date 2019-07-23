@@ -22,19 +22,18 @@ public class LoginHandler implements Handler<RoutingContext> {
     rc.vertx()
         .eventBus()
         .rxSend("login", userRequest)
-        .map(
-            x -> {
-              long loginCount = (long) x.body();
-              if (loginCount == 1) {
+        .map(m -> (JsonObject) m.body())
+        .subscribe(
+            success ->
                 rc.response()
                     .end(
-                        authProvider.generateToken(
-                            new JsonObject().put("sub", bodyAsJson.getString("username")),
-                            new JWTOptions().setExpiresInMinutes(30)));
-              }
-              return loginCount;
-            })
-        .filter(count -> count != 1)
-        .subscribe(success -> rc.response().setStatusCode(401).end());
+                        success
+                            .put(
+                                "token",
+                                authProvider.generateToken(
+                                    new JsonObject().put("sub", bodyAsJson.getString("username")),
+                                    new JWTOptions().setExpiresInMinutes(30)))
+                            .encodePrettily()),
+            error -> rc.response().setStatusCode(401).end(error.getMessage()));
   }
 }

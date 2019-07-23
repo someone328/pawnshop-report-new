@@ -57,6 +57,12 @@
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-junit5</artifactId>
 			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>io.reactivex</groupId>
+					<artifactId>rxjava</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.vertx</groupId>

@@ -79,7 +79,8 @@ public class CrudHandler implements Handler<RoutingContext> {
   }
 
   public enum SupportedObjectTypes {
-    USER,
+    BRANCH,
+	USER,
     REPORT
   }
 

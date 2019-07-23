@@ -45,6 +45,7 @@ public class HttpServerVertx extends AbstractVerticle {
                 .allowedHeader("X-Requested-With")
                 .allowedHeader("Content-Type")
                 .allowedHeader("Accept")
+                .allowedHeader("Authorization")
                 .allowedMethod(HttpMethod.GET)
                 .allowedMethod(HttpMethod.POST));
     router.route().handler(ResponseContentTypeHandler.create());
@@ -58,9 +59,9 @@ public class HttpServerVertx extends AbstractVerticle {
                         .setAlgorithm("HS256")
                         .setPublicKey("dRRVnUmUHXOTt9nk")
                         .setSymmetric(true)));
-    router.route("/protected/*").handler(JWTAuthHandler.create(authProvider));
 
     router.post("/login").handler(new LoginHandler(authProvider));
+    router.route("/protected/*").handler(JWTAuthHandler.create(authProvider));
 
     /** crud */
     router.post("/protected/v1/crud/:objectType/:operationType").handler(new CrudHandler());
