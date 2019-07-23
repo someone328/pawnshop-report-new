@@ -16,17 +16,34 @@ public class CrudVerticle extends AbstractVerticle {
 
     vertx
         .eventBus()
+        .consumer("crud.delete")
+        .toFlowable()
+        .flatMap(
+            message ->
+                client
+                    .rxRemoveDocument(
+                        message.headers().get("objectType"),
+                        new JsonObject().put("_id", (String) message.body()))
+                    .doOnError(error -> message.fail(500, error.getMessage()))
+                    .flatMap(result -> message.rxReply(result.toJson()))
+                    .toFlowable())
+        .retry()
+        .subscribe(r -> {}, error -> log.error("crud error", error));
+
+    vertx
+        .eventBus()
         .consumer("crud.put")
         .toFlowable()
         .flatMap(
             message ->
                 client
                     .rxSave(message.headers().get("objectType"), (JsonObject) message.body())
+                    .defaultIfEmpty(((JsonObject) message.body()).getString("_id"))
+                    .doOnError(error -> message.fail(500, error.getMessage()))
                     .flatMapPublisher(res -> message.rxReply(res).toFlowable()))
         .retry()
         .subscribe(r -> {}, error -> log.error("crud error", error));
 
-    
     vertx
         .eventBus()
         .consumer("crud.get")
@@ -36,8 +53,13 @@ public class CrudVerticle extends AbstractVerticle {
                 client
                     .findBatch(message.headers().get("objectType"), (JsonObject) message.body())
                     .toFlowable()
-                    .map(object -> {object.remove("password"); return object;})
+                    .map(
+                        object -> {
+                          object.remove("password");
+                          return object;
+                        })
                     .collectInto(new JsonArray(), (array, object) -> array.add(object))
+                    .doOnError(error -> message.fail(500, error.getMessage()))
                     .flatMapPublisher(array -> message.rxReply(array).toFlowable()))
         .retry()
         .subscribe(r -> {}, error -> log.error("crud error", error));
