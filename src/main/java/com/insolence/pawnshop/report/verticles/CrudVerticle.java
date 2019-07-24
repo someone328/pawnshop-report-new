@@ -1,5 +1,6 @@
 package com.insolence.pawnshop.report.verticles;
 
+import io.reactivex.Maybe;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.AbstractVerticle;
@@ -35,12 +36,19 @@ public class CrudVerticle extends AbstractVerticle {
         .consumer("crud.put")
         .toFlowable()
         .flatMap(
-            message ->
-                client
-                    .rxSave(message.headers().get("objectType"), (JsonObject) message.body())
-                    .defaultIfEmpty(((JsonObject) message.body()).getString("_id"))
-                    .doOnError(error -> message.fail(500, error.getMessage()))
-                    .flatMapPublisher(res -> message.rxReply(res).toFlowable()))
+            message -> {
+              JsonObject body = (JsonObject) message.body();
+              Maybe<String> upsert;
+              if (body.containsKey("_id")) {
+                upsert =
+                    client
+                        .rxSave(message.headers().get("objectType"), body)
+                        .defaultIfEmpty(body.getString("_id"));
+              } else {
+                upsert = client.rxSave(message.headers().get("objectType"), body);
+              }
+              return upsert.flatMapPublisher(res -> message.rxReply(res).toFlowable());
+            })
         .retry()
         .subscribe(r -> {}, error -> log.error("crud error", error));
 
@@ -59,7 +67,11 @@ public class CrudVerticle extends AbstractVerticle {
                           return object;
                         })
                     .collectInto(new JsonArray(), (array, object) -> array.add(object))
-                    .doOnError(error -> message.fail(500, error.getMessage()))
+                    .doOnError(
+                        error -> {
+                          log.error("crud GET error", error);
+                          message.fail(500, error.getMessage());
+                        })
                     .flatMapPublisher(array -> message.rxReply(array).toFlowable()))
         .retry()
         .subscribe(r -> {}, error -> log.error("crud error", error));

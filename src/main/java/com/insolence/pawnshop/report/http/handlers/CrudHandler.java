@@ -42,7 +42,7 @@ public class CrudHandler implements Handler<RoutingContext> {
   }
   
   private void processDeleteOperation(RoutingContext rc,DeliveryOptions deliveryOptions,JsonObject jsonBody){
-	  String idToDelete = jsonBody.getString("id");
+	  String idToDelete = jsonBody.getString("_id");
 	  log.info(idToDelete);
 	  rc.vertx()
 	  	.eventBus()
