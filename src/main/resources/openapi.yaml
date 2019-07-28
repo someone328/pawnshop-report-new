@@ -25,12 +25,12 @@ paths:
     post:
       summary: Сохранение отчета
       operationId: saveReport
-      tags: 
+      tags:
         - report
       requestBody:
         content:
           'appliocation/json':
-            schema: 
+            schema:
               $ref: ./model/Report.yaml
         required: true
       responses:
