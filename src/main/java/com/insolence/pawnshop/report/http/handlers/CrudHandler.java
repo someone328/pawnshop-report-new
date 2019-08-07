@@ -43,14 +43,14 @@ public class CrudHandler implements Handler<RoutingContext> {
                 .flatMapSingle(role -> rc.user()
                         .rxIsAuthorized(role)
                         .map(b -> Pair.of(role, b)))
-                .filter(p -> p.getRight() == true)
+                .filter(Pair::getRight)
                 .take(1)
                 .switchIfEmpty(Observable.error(new RuntimeException()))
+                .doOnEach(System.out::println)
                 .subscribe(
                         success -> {
                             DeliveryOptions deliveryOptions = new DeliveryOptions().addHeader("objectType", objectType);
                             JsonObject jsonBody = rc.getBodyAsJson();
-
                             switch (operationTypeEnum) {
                                 case PUT -> processPutOperation(rc, deliveryOptions, jsonBody);
                                 case GET -> processGetOperation(rc, deliveryOptions, jsonBody);
@@ -69,8 +69,11 @@ public class CrudHandler implements Handler<RoutingContext> {
         rc.vertx()
                 .eventBus()
                 .rxSend("crud.delete", idToDelete, deliveryOptions)
-                .map(responce -> responce.body().toString())
-                .subscribe(success -> rc.response().putHeader("Encoding", "UTF-8").setStatusCode(200).end(success),
+                .map(response -> response.body().toString())
+                .subscribe(success -> rc.response()
+                                .putHeader("Encoding", "UTF-8")
+                                .setStatusCode(200)
+                                .end(success),
                         error -> {
                             log.error("Process DELETE error", error);
                             rc.response().setStatusCode(500).end();

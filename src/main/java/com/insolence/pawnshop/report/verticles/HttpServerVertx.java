@@ -1,19 +1,24 @@
 package com.insolence.pawnshop.report.verticles;
 
+import com.insolence.pawnshop.report.http.handlers.CreateNewReportHandler;
 import com.insolence.pawnshop.report.http.handlers.CrudHandler;
 import com.insolence.pawnshop.report.http.handlers.LoginHandler;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.PubSecKeyOptions;
 import io.vertx.ext.auth.jwt.JWTAuthOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.core.http.HttpServer;
+import io.vertx.reactivex.ext.auth.User;
 import io.vertx.reactivex.ext.auth.jwt.JWTAuth;
 import io.vertx.reactivex.ext.web.Router;
-import io.vertx.reactivex.ext.web.handler.BodyHandler;
-import io.vertx.reactivex.ext.web.handler.CorsHandler;
-import io.vertx.reactivex.ext.web.handler.JWTAuthHandler;
-import io.vertx.reactivex.ext.web.handler.ResponseContentTypeHandler;
+import io.vertx.reactivex.ext.web.RoutingContext;
+import io.vertx.reactivex.ext.web.handler.*;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Set;
 
 @Slf4j
 public class HttpServerVertx extends AbstractVerticle {
@@ -57,6 +62,8 @@ public class HttpServerVertx extends AbstractVerticle {
 
         /** crud */
         router.post("/protected/v1/crud/:objectType/:operationType").handler(new CrudHandler());
+        /** new report */
+        router.get("/protected/v1/newReport").handler(new CreateNewReportHandler());
 
         /** hystrix mectrix */
     /*

@@ -1,7 +1,9 @@
 package com.insolence.pawnshop.report.util;
 
 import lombok.Getter;
+import lombok.ToString;
 
+@ToString
 @Getter
 public class Pair<L, R> {
     private final R right;
