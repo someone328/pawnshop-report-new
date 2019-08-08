@@ -2,6 +2,7 @@ package com.insolence.pawnshop.report.verticles;
 
 import com.insolence.pawnshop.report.http.handlers.CreateNewReportHandler;
 import com.insolence.pawnshop.report.http.handlers.CrudHandler;
+import com.insolence.pawnshop.report.http.handlers.FindPreviousReportHandler;
 import com.insolence.pawnshop.report.http.handlers.LoginHandler;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -62,6 +63,7 @@ public class HttpServerVertx extends AbstractVerticle {
 
         /** crud */
         router.post("/protected/v1/crud/:objectType/:operationType").handler(new CrudHandler());
+        router.post("/protected/v1/crud/report/get/previous").handler(new FindPreviousReportHandler());
         /** new report */
         router.get("/protected/v1/newReport").handler(new CreateNewReportHandler());
 
