@@ -1,42 +1,44 @@
 package com.insolence.pawnshop.report.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Report {
 
     private String _id;
     private String branch;
     private String user;
     private Long date;
-    private BigDecimal loanersPawned;
-    private BigDecimal loanersBought;
-    private BigDecimal loanersAsset;
-    private BigDecimal loanedRub;
-    private BigDecimal repayedRub;
+    private BigDecimal loanersPawned= new BigDecimal(0.00);
+    private BigDecimal loanersBought= new BigDecimal(0.00);
+    private BigDecimal loanersAsset= new BigDecimal(0.00);
+    private BigDecimal loanedRub= new BigDecimal(0.00);
+    private BigDecimal repayedRub= new BigDecimal(0.00);
     private String percentRecieved;
-    private BigDecimal volume;
-    private BigDecimal goldBought;
-    private BigDecimal goldSold;
-    private BigDecimal goldBalance;
-    private BigDecimal silverBought;
-    private BigDecimal silverSold;
-    private BigDecimal silverBalance;
-    private BigDecimal diamondBought;
-    private BigDecimal diamondSold;
-    private BigDecimal diamondBalance;
-    private BigDecimal goodsBought;
-    private BigDecimal goodsSold;
-    private BigDecimal goodsBalance;
-    private BigDecimal cashboxEvening;
-    private BigDecimal cashboxMorning;
-    private BigDecimal tradesActive;
-    private BigDecimal goldTradeSum;
-    private BigDecimal goldTradeWeight;
-    private BigDecimal silverTradeSum;
-    private BigDecimal silverTradeWeight;
-    private BigDecimal diamondsTradeWeight;
-    private BigDecimal goodsTradeSum;
+    private BigDecimal volume= new BigDecimal(0.00);
+    private BigDecimal goldBought= new BigDecimal(0.00);
+    private BigDecimal goldSold= new BigDecimal(0.00);
+    private BigDecimal goldBalance= new BigDecimal(0.00);
+    private BigDecimal silverBought= new BigDecimal(0.00);
+    private BigDecimal silverSold= new BigDecimal(0.00);
+    private BigDecimal silverBalance= new BigDecimal(0.00);
+    private BigDecimal diamondBought= new BigDecimal(0.00);
+    private BigDecimal diamondSold= new BigDecimal(0.00);
+    private BigDecimal diamondBalance= new BigDecimal(0.00);
+    private BigDecimal goodsBought= new BigDecimal(0.00);
+    private BigDecimal goodsSold= new BigDecimal(0.00);
+    private BigDecimal goodsBalance= new BigDecimal(0.00);
+    private BigDecimal cashboxEvening= new BigDecimal(0.00);
+    private BigDecimal cashboxMorning= new BigDecimal(0.00);
+    private BigDecimal tradesActive= new BigDecimal(0.00);
+    private BigDecimal goldTradeSum= new BigDecimal(0.00);
+    private BigDecimal goldTradeWeight= new BigDecimal(0.00);
+    private BigDecimal silverTradeSum= new BigDecimal(0.00);
+    private BigDecimal silverTradeWeight= new BigDecimal(0.00);
+    private BigDecimal diamondsTradeWeight= new BigDecimal(0.00);
+    private BigDecimal goodsTradeSum= new BigDecimal(0.00);
 }

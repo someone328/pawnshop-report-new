@@ -1,6 +1,9 @@
 package com.insolence.pawnshop.report.http.handlers;
 
 import com.insolence.pawnshop.report.domain.Report;
+import com.insolence.pawnshop.report.domain.ReportCalculations;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.FindOptions;
@@ -8,17 +11,32 @@ import io.vertx.reactivex.ext.auth.User;
 import io.vertx.reactivex.ext.mongo.MongoClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 public class CreateNewReportHandler implements Handler<RoutingContext> {
+    private static final JsonObject EMPTY_JSON = new JsonObject();
+    private static final BigDecimal DEFAULT_BIGDECIMAL_VALUE = new BigDecimal(0.00);
     private MongoClient client;
 
     @Override
     public void handle(RoutingContext rc) {
+        var bodyAsJson = rc.getBodyAsJson();
+        String branchId = bodyAsJson.getString("branchId");
+        Long reportDate = Long.valueOf(bodyAsJson.getString("reportDate"));
         User user = rc.user();
         if (client == null) {
             client = MongoClient.createShared(rc.vertx(), new JsonObject(), "pawnshop-report");
         }
 
-        client
+        Single<List<JsonObject>> reportsHistory = client.rxFindWithOptions(
+                "report",
+                new JsonObject().put("branch", branchId).put("date", new JsonObject().put("$lt", reportDate)),
+                new FindOptions()
+                        .setSort(new JsonObject().put("date", 1))
+                        .setLimit(500));
+
+       /* client
                 .rxFindOne(
                         "user",
                         new JsonObject().put("username", user.principal().getValue("sub")),
@@ -27,16 +45,19 @@ public class CreateNewReportHandler implements Handler<RoutingContext> {
                 .flatMapSingle(
                         userJson -> client.rxFindWithOptions(
                                 "report",
-                                new JsonObject().put("user", userJson.getValue("_id")),
+                                new JsonObject().put("branch", userJson.getValue("_id")),
                                 new FindOptions()
-                                        .setSort(new JsonObject().put("date", -1))
-                                        .setLimit(1)
+                                        .setSort(new JsonObject().put("date", 1))
+                                        .setLimit(500)
                         )
-                )
                 .map(l -> l.iterator().next())
+                )*/
+        reportsHistory
+                .flatMapObservable(list -> Observable.fromIterable(list))
                 .map(jo -> jo.mapTo(Report.class))
-                //.zipWith(() -> )
-                .map(lastReport -> this.createNewReport(null, lastReport))
+                .doOnEach(System.out::println)
+                .reduceWith(ReportCalculations::new, this::calculateReportInfo)
+                //.map(lastReport -> this.createNewReport(null, lastReport))
                 .subscribe(
                         x -> rc.response().end(JsonObject.mapFrom(x).encodePrettily()),
                         error -> error.printStackTrace()
@@ -63,45 +84,51 @@ public class CreateNewReportHandler implements Handler<RoutingContext> {
                 );*/
     }
 
-    private Report createNewReport(Report newReport, Report lastReport) {
-        //Report newReport = new Report();
-        newReport.setLoanersAsset(
-                lastReport.getLoanersAsset()
-                        .add(newReport.getLoanersPawned())
-                        .subtract(newReport.getLoanersBought())
-                        .subtract(newReport.getTradesActive()));
+    private BigDecimal noNull(BigDecimal bd){
+        return bd == null? DEFAULT_BIGDECIMAL_VALUE: bd;
+    }
 
-        newReport.setVolume(
-                lastReport.getVolume()
-                        .subtract(newReport.getLoanedRub())
-                        .subtract(newReport.getRepayedRub()));
+    private ReportCalculations calculateReportInfo(ReportCalculations calculations, Report lastReport) {
+        BigDecimal loanersPawned = noNull(lastReport.getLoanersPawned());
+        BigDecimal loanersBought = noNull(lastReport.getLoanersBought());
+        BigDecimal tradesActive = noNull(lastReport.getTradesActive());
+        calculations.setLoanersAsset(
+                calculations.getLoanersAsset()
+                        .add(loanersPawned)
+                        .subtract(loanersBought)
+                        .subtract(tradesActive));
 
-        newReport.setGoldBalance(
-                lastReport.getGoldBalance()
-                        .subtract(newReport.getGoldSold())
-                        .add(newReport.getGoldBought())
-                        .subtract(newReport.getGoldTradeWeight()));
+        calculations.setVolume(
+                calculations.getVolume()
+                        .subtract(noNull(lastReport.getLoanedRub()))
+                        .subtract(noNull(lastReport.getRepayedRub())));
 
-        newReport.setSilverBalance(
-                lastReport.getSilverBalance()
-                        .subtract(newReport.getSilverSold())
-                        .add(newReport.getSilverBought())
-                        .subtract(newReport.getSilverTradeWeight()));
+        calculations.setGoldBalance(
+                calculations.getGoldBalance()
+                        .subtract(noNull(lastReport.getGoldSold()))
+                        .add(noNull(lastReport.getGoldBought()))
+                        .subtract(noNull(lastReport.getGoldTradeWeight())));
 
-        newReport.setDiamondBalance(
-                lastReport.getDiamondBalance()
-                        .subtract(newReport.getDiamondSold())
-                        .add(newReport.getDiamondBought())
-                        .subtract(newReport.getDiamondsTradeWeight()));
+        calculations.setSilverBalance(
+                calculations.getSilverBalance()
+                        .subtract(noNull(lastReport.getSilverSold()))
+                        .add(noNull(lastReport.getSilverBought()))
+                        .subtract(noNull(lastReport.getSilverTradeWeight())));
 
-        newReport.setGoodsBalance(
-                lastReport.getGoodsBalance()
-                .subtract(newReport.getGoodsSold())
-                .add(newReport.getGoodsBought())
-                .subtract(newReport.getDiamondsTradeWeight()));
+        calculations.setDiamondBalance(
+                calculations.getDiamondBalance()
+                        .subtract(noNull(lastReport.getDiamondSold()))
+                        .add(noNull(lastReport.getDiamondBought()))
+                        .subtract(noNull(lastReport.getDiamondsTradeWeight())));
 
-        newReport.setCashboxMorning(lastReport.getCashboxEvening());
+        calculations.setGoodsBalance(
+                calculations.getGoodsBalance()
+                        .subtract(noNull(lastReport.getGoodsSold()))
+                        .add(noNull(lastReport.getGoodsBought()))
+                        .subtract(noNull(lastReport.getDiamondsTradeWeight())));
 
-        return newReport;
+        calculations.setCashboxEvening(noNull(lastReport.getCashboxEvening()));
+
+        return calculations;
     }
 }

@@ -28,12 +28,12 @@ public class FindPreviousReportHandler implements Handler<RoutingContext> {
         Maybe<JsonObject> userMaybe = client.rxFindOne("user", new JsonObject().put("username", rcUser.principal().getValue("sub")), EMPTY_JSON);
         Maybe<JsonObject> currentReportMaybe = client.rxFindOne("report", new JsonObject().put("_id", currentReportId), EMPTY_JSON);
         Maybe.zip(userMaybe, currentReportMaybe, (user, currentReport) ->
-                        client.rxFindWithOptions("report",
-                                new JsonObject().put("user", user.getString("_id"))
-                                        .put("date", new JsonObject().put("$lt", currentReport.getValue("date"))),
-                                new FindOptions().setSort(new JsonObject().put("date",
-                                        1)).setLimit(1)
-                        )
+                client.rxFindWithOptions("report",
+                        new JsonObject()
+                                .put("user", user.getString("_id"))
+                                .put("date", new JsonObject().put("$lt", currentReport.getValue("date"))),
+                        new FindOptions().setSort(new JsonObject().put("date", -1)).setLimit(1)
+                )
         )
                 .doOnComplete(() -> rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8").end(new JsonObject().toString()))
                 .flatMapSingle(e -> e)

@@ -65,7 +65,7 @@ public class HttpServerVertx extends AbstractVerticle {
         router.post("/protected/v1/crud/:objectType/:operationType").handler(new CrudHandler());
         router.post("/protected/v1/crud/report/get/previous").handler(new FindPreviousReportHandler());
         /** new report */
-        router.get("/protected/v1/newReport").handler(new CreateNewReportHandler());
+        router.post("/protected/v1/calculateDynamics").handler(new CreateNewReportHandler());
 
         /** hystrix mectrix */
     /*
