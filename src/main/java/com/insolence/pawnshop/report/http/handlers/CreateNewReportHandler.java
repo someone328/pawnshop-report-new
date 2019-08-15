@@ -14,6 +14,8 @@ import io.vertx.reactivex.ext.web.RoutingContext;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static com.insolence.pawnshop.report.util.BigDecimalUtils.noNull;
+
 public class CreateNewReportHandler implements Handler<RoutingContext> {
     private static final JsonObject EMPTY_JSON = new JsonObject();
     private static final BigDecimal DEFAULT_BIGDECIMAL_VALUE = new BigDecimal(0.00);
@@ -82,10 +84,6 @@ public class CreateNewReportHandler implements Handler<RoutingContext> {
                         report -> rc.response().end(report.encodePrettily()),
                         error -> rc.response().setStatusCode(500).end(error.getMessage())
                 );*/
-    }
-
-    private BigDecimal noNull(BigDecimal bd){
-        return bd == null? DEFAULT_BIGDECIMAL_VALUE: bd;
     }
 
     private ReportCalculations calculateReportInfo(ReportCalculations calculations, Report lastReport) {

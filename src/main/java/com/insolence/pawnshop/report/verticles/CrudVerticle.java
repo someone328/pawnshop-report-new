@@ -26,7 +26,7 @@ public class CrudVerticle extends AbstractVerticle {
                                                 message.headers().get("objectType"),
                                                 new JsonObject().put("_id", (String) message.body()))
                                         .doOnError(error -> message.fail(500, error.getMessage()))
-                                        .flatMap(result -> message.rxReply(result.toJson())))
+                                        .flatMapSingle(result -> message.rxReply(result.toJson())))
                 .retry()
                 .subscribe(r -> {
                         },

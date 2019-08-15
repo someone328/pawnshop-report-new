@@ -4,6 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.insolence.pawnshop.report.util.BigDecimalUtils.noNull;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -41,4 +45,9 @@ public class Report {
     private BigDecimal silverTradeWeight= new BigDecimal(0.00);
     private BigDecimal diamondsTradeWeight= new BigDecimal(0.00);
     private BigDecimal goodsTradeSum= new BigDecimal(0.00);
+    private List<Expense> expenses = new ArrayList<>();
+
+    public BigDecimal getExpensesSum(){
+        return expenses.stream().map(e -> noNull(e.getSum())).reduce(BigDecimal.ZERO, (x, z) -> x.add(z));
+    }
 }
