@@ -14,6 +14,7 @@ import io.vertx.reactivex.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 
@@ -46,7 +47,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
             "    {\"$lookup\": {\"from\": \"branch\", \"localField\": \"_id.branch\", \"foreignField\": \"_id\", \"as\": \"branchInfo\"}},\n" +
             "    {\"$sort\": {\"branchInfo.name\": 1}}\n" +
             "]";
-    private static final BigDecimal goldBySilverContentDivision = new BigDecimal(999.9).divide(new BigDecimal(585.0), 2, BigDecimal.ROUND_UP);
+    private static final BigDecimal goldBySilverContentDivision = new BigDecimal(999.9).divide(new BigDecimal(585.0), 4, RoundingMode.HALF_UP);
 
     private MongoClient client;
 
@@ -65,7 +66,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     branchReport.setBranchName(json.getJsonArray("branchInfo").getJsonObject(0).getString("name"));
                     Observable.fromIterable(json.getJsonArray("reportStatIndex"))
                             .map(e -> (JsonObject) e)
-                            .doOnEach(System.out::println)
+                            //.doOnEach(System.out::println)
                             .flatMapSingle(month ->
                                     Observable.fromIterable(month.getJsonArray("reports"))
                                             .map(x -> ((JsonObject) x).mapTo(Report.class))
@@ -86,40 +87,46 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                                 row.setMonthRepayRub(row.getMonthRepayRub().add(noNull(report.getRepayedRub())));
                                                 //startBasket
                                                 //endBasket
-                                                row.setMonthExpenses(row.getMonthExpenses().add(report.getExpensesSum()));
+                                                row.setMonthExpenses(row.getMonthExpenses().add(noNull(report.getExpensesSum())));
                                                 //
-                                                row.setMonthGoldTradeSum(row.getMonthGoldTradeSum().add(report.getGoldTradeSum()));
-                                                row.setMonthGoldTradeWeight(row.getMonthGoldTradeWeight().add(report.getGoldTradeWeight()));
-                                                row.setMonthSilverTradeSum(row.getMonthSilverTradeSum().add(report.getSilverTradeSum()));
-                                                row.setMonthSilverTradeWeight(row.getMonthSilverTradeWeight().add(report.getSilverTradeWeight()));
+                                                row.setMonthGoldTradeSum(row.getMonthGoldTradeSum().add(noNull(report.getGoldTradeSum())));
+                                                row.setMonthGoldTradeWeight(row.getMonthGoldTradeWeight().add(noNull(report.getGoldTradeWeight())));
+                                                row.setMonthSilverTradeSum(row.getMonthSilverTradeSum().add(noNull(report.getSilverTradeSum())));
+                                                row.setMonthSilverTradeWeight(row.getMonthSilverTradeWeight().add(noNull(report.getSilverTradeWeight())));
 
                                                 return row;
                                             }))
-                                            .map(row -> {
-                                                var preciousMetalsSum = row.getMonthGoldTradeSum()
-                                                        .add(row.getMonthSilverTradeSum());
-                                                var preciousMetalsWeight = row.getMonthGoldTradeWeight().add(row.getMonthSilverTradeWeight());
-                                                row.setMonthTradeBalance(
-                                                    preciousMetalsSum
-                                                            .divide(preciousMetalsWeight, 4, BigDecimal.ROUND_UP)
-                                                            .multiply(goldBySilverContentDivision)
-                                                            .setScale(0, BigDecimal.ROUND_HALF_UP)
-                                                );
-                                                return row;
-                                            })
+                                            .map(this::calculateMonthTradeBalance)
                             .subscribe(s -> branchReport.getMonthlyReports().add(s));
-                    //branchReport.getMonthlyReports().stream(mr -> )
                     return branchReport;
                 })
                 .reduce(new JsonArray(), (arr, br) -> arr.add(JsonObject.mapFrom(br)))
                 .subscribe(
                         success -> rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8").end(success.encodePrettily()),
                         error -> log.error("", error)
-                        //() -> rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8").end(pipeline.encodePrettily())
                 );
     }
 
-    private long getCurrentYearStartTimestamp() {
+    private StatisticsReportForBranchRow calculateMonthTradeBalance(StatisticsReportForBranchRow row) {
+        try {
+            var preciousMetalsSum = row.getMonthGoldTradeSum()
+                    .add(row.getMonthSilverTradeSum());
+            var preciousMetalsWeight = row.getMonthGoldTradeWeight().add(row.getMonthSilverTradeWeight());
+            row.setMonthTradeBalance(
+                preciousMetalsSum
+                        .divide(preciousMetalsWeight, 4, RoundingMode.HALF_UP)
+                        .multiply(goldBySilverContentDivision)
+                        .setScale(0, RoundingMode.HALF_UP)
+            );
+            return row;
+        } catch (Exception e) {
+            row.errors.put("monthGoldTradeSum", "деление на ноль");
+        }
+        return row;
+    }
+
+    private long getCurrentYearStartTimestamp()
+    {
         return Instant.from(ZonedDateTime.now().withDayOfMonth(1).withDayOfYear(1).withHour(0).withMinute(0).withSecond(0)).toEpochMilli();
     }
 }

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 public class StatisticsReportForBranchRow {
@@ -20,6 +22,7 @@ public class StatisticsReportForBranchRow {
     private BigDecimal endBasket = BigDecimal.ZERO;
     private BigDecimal monthExpenses = BigDecimal.ZERO;
     //
+    public Map<String, String> errors = new HashMap<>();
     @JsonIgnore
     private BigDecimal monthGoldTradeSum = BigDecimal.ZERO;
     @JsonIgnore
