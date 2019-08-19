@@ -4,9 +4,10 @@ import lombok.Data;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 @Data
 public class StatisticReportForBranch {
     private String branchName;
-    private ArrayList monthlyReports = new ArrayList<StatisticsReportForBranchRow>();
+    private LinkedList<StatisticsReportForBranchRow> monthlyReports = new LinkedList<>();
 }

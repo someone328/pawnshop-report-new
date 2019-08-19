@@ -31,4 +31,8 @@ public class StatisticsReportForBranchRow {
     private BigDecimal monthSilverTradeSum = BigDecimal.ZERO;
     @JsonIgnore
     private BigDecimal monthSilverTradeWeight = BigDecimal.ZERO;
+    @JsonIgnore
+    private BigDecimal monthlyVolumeSum = BigDecimal.ZERO;
+    @JsonIgnore
+    private Report lastReport;
 }

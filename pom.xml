@@ -147,6 +147,7 @@
                         </args>
                         <jvmFlags>
                             <jvmFlag>--enable-preview</jvmFlag>
+                            <jvmFlag>-Duser.timezone=UTC</jvmFlag>
                             <jvmFlag>
                                 -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory
                             </jvmFlag>

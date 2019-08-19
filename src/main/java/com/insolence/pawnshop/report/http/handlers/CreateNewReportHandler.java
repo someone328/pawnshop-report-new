@@ -97,9 +97,10 @@ public class CreateNewReportHandler implements Handler<RoutingContext> {
                         .subtract(tradesActive));
 
         calculations.setVolume(
-                calculations.getVolume()
-                        .subtract(noNull(lastReport.getLoanedRub()))
-                        .subtract(noNull(lastReport.getRepayedRub())));
+                lastReport.getVolume()
+               /* calculations.getVolume()
+                        .add(noNull(lastReport.getLoanedRub()))
+                        .subtract(noNull(lastReport.getRepayedRub()))*/);
 
         calculations.setGoldBalance(
                 calculations.getGoldBalance()
