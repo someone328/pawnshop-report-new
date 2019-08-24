@@ -54,4 +54,8 @@ public class Report {
     public BigDecimal getVolume() {
         return noNull(loanedRub).subtract(noNull(repayedRub));
     }
+
+    public BigDecimal getPawnersRate(){
+        return getLoanersPawned().subtract(getLoanersBought());
+    }
 }

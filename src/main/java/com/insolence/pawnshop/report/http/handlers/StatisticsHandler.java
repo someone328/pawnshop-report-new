@@ -21,6 +21,7 @@ import java.time.*;
 import java.util.Date;
 
 import static com.insolence.pawnshop.report.util.BigDecimalUtils.noNull;
+import static com.insolence.pawnshop.report.util.DateUtils.getCurrentYearStartTimestamp;
 
 @Slf4j
 public class StatisticsHandler implements Handler<RoutingContext> {
@@ -169,11 +170,5 @@ public class StatisticsHandler implements Handler<RoutingContext> {
             row.errors.put("monthGoldTradeSum", "деление на ноль");
         }
         return row;
-    }
-
-    private long getCurrentYearStartTimestamp() {
-        System.out.println(LocalDate.now().withDayOfYear(1).atStartOfDay().toInstant(ZoneOffset.ofHours(3)).toEpochMilli());
-        //return OffsetDateTime.now(ZoneOffset.UTC).withDayOfYear(1).withHour(0).withMinute(0).withNano(0).toEpochSecond() * 1000;
-        return LocalDate.now().withDayOfYear(1).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
     }
 }

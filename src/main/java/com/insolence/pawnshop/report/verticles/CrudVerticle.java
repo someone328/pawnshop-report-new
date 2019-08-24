@@ -69,6 +69,7 @@ public class CrudVerticle extends AbstractVerticle {
                                                     object.remove("password");
                                                     return object;
                                                 })*/
+                                        .map(this::GetInterceptor)
                                         .collectInto(new JsonArray(), (array, object) -> array.add(object))
                                         .doOnError(
                                                 error -> {
@@ -81,5 +82,12 @@ public class CrudVerticle extends AbstractVerticle {
                 }, error -> log.error("crud error", error));
 
         log.info("CrudVerticle Ready!");
+    }
+
+    private JsonObject GetInterceptor(JsonObject entry) {
+
+
+
+        return entry;
     }
 }
