@@ -25,14 +25,9 @@ public class TotalPercentReceivedCalculationsVerticle extends AbstractVerticle {
             "[\n" +
             "    { \"$match\": { \"date\": { \"$gte\": %s, \"$lt\": %s }, \"branch\": \"%s\" }},\n" +
             "    {\n" +
-            "        \"$project\": {\n" +
-            "            \"date\": { \"$toDate\": { \"$toLong\": \"$date\" } }\n" +
-            "        }\n" +
-            "    },\n" +
-            "    {\n" +
             "        \"$group\": {\n" +
-            "            \"_id\": { \"year\": { \"$year\": \"$date\" } },\n" +
-            "            \"totalAmount\": { \"$sum\": \"percentReceived\" },\n" +
+            "            \"_id\": { \"year\": { \"$year\": { \"$toDate\": { \"$toLong\": \"$date\" } } } },\n" +
+            "            \"totalAmount\": { \"$sum\": \"$percentRecieved\" },\n" +
             "            \"count\": { \"$sum\": 1 }\n" +
             "        }\n" +
             "    }\n" +
