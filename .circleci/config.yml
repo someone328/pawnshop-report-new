@@ -78,4 +78,4 @@ jobs:
       - run:
           name: Deploy Over SSH
           command: |
-            ssh root@77.244.214.183 "dc pull && dc down && dc up -d"
+            ssh root@77.244.214.183 "docker-compose pull && docker-compose down && docker-compose up -d"
