@@ -1,29 +1,63 @@
-version: 2 # use CircleCI 2.0
-jobs: # a collection of steps
-  build: # runs not using Workflows must have a `build` job as entry point
+version: 2.1
 
-    working_directory: ~/pawnshop-report # directory where steps will run
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - unit-test
+      - publish-docker:
+          requires:
+            - unit-test
 
-    docker: # run the steps with Docker
-      - image: codeaches/openjdk:12-jdk # ...with this image as the primary container; this is where all `steps` will run
-
-    steps: # a collection of executable commands
-
-      - checkout # check out source code to working directory
-
-      - restore_cache: # restore the saved cache after the first run or if `pom.xml` has changed
-          # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
-          key: pawnshop-report-{{ checksum "pom.xml" }}
-
-      - run: mvn dependency:go-offline # gets the project dependencies
-
-      - save_cache: # saves the project dependencies
+jobs:
+  unit-test:
+    docker:
+      - image: codeaches/openjdk:12-jdk
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - pawnshop-report-{{ checksum "pom.xml" }}
+            - pawnshop-report
+      - run: mvn dependency:go-offline
+      - run:
+          name: Build and unit test
+          command: |
+            mvn test -B \
+              -Dbuild.number=${CIRCLE_BUILD_NUM} \
+              -Dcommit.hash=${CIRCLE_SHA1} \
+              -Dcircle.workflow.guid=${CIRCLE_WORKFLOW_ID} \
+              -Dbuild.user=${CIRCLE_PROJECT_USERNAME} \
+              -Dbuild.repo=${CIRCLE_PROJECT_REPONAME}
+      - save_cache:
           paths:
             - ~/.m2
           key: pawnshop-report-{{ checksum "pom.xml" }}
-
-      - run: mvn package # run the actual tests
-
-      - store_test_results: # uploads the test metadata from the `target/surefire-reports` directory so that it can show up in the CircleCI dashboard. 
-          # Upload test results for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
+      - store_test_results:
           path: target/surefire-reports
+
+
+
+  publish-docker:
+    docker:
+      - image: codeaches/openjdk:12-jdk
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - pawnshop-report-{{ checksum "pom.xml" }}
+            - pawnshop-report
+      - run: mvn dependency:go-offline
+      - run: cp ./settings.xml ~/.m2/settings.xml
+      - run: echo "<settingsSecurity><master>${maven_security_master}</master></settingsSecurity>" > ~/.m2/settings-security.xml
+      - run:
+          name: Publish Docker image with Jib
+          command: |
+            ./mvn compile jib:build -B -DskipTests=true \
+              -Dbuild.number=${CIRCLE_BUILD_NUM} \
+              -Dcommit.hash=${CIRCLE_SHA1} \
+              -Dcircle.workflow.guid=${CIRCLE_WORKFLOW_ID} \
+              -Dbuild.user=${CIRCLE_PROJECT_USERNAME} \
+              -Dbuild.repo=${CIRCLE_PROJECT_REPONAME}

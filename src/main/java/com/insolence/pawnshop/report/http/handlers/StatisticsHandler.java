@@ -17,8 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.*;
-import java.util.Date;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 import static com.insolence.pawnshop.report.util.BigDecimalUtils.noNull;
 import static com.insolence.pawnshop.report.util.DateUtils.getCurrentYearStartTimestamp;
@@ -87,11 +88,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                                     System.out.println(month.getInteger("month") + " " + pair.getLeft().getBranchName());
                                                     row.setMonthNum(month.getInteger("month"));
                                                     row.setMonthlyVolumeSum(row.getMonthlyVolumeSum().add(noNull(report.getVolume())));
-                                                    row.setMonthTradeSum(
-                                                            row.getMonthTradeSum()
-                                                                    .add(noNull(report.getGoldTradeSum()))
-                                                                    .add(noNull(report.getSilverTradeSum()))
-                                                                    .add(noNull(report.getGoodsTradeSum())));
+                                                    row.setMonthTradeSum(row.getMonthTradeSum().add(noNull(report.getAuctionAmount())));
                                                     row.setTradeIncome(row.getMonthTradeSum().subtract(row.getMonthTradeBalance()));
                                                     row.setCashboxStartMorning(firstReportInMonth.mapTo(Report.class).getCashboxMorning());
                                                     row.setCashboxEndMorning(report.getCashboxEvening());
@@ -111,9 +108,9 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                 .map(this::calculateMonthTradeBalance)
                                 .map(this::calculateMonthAverageBasket)
                                 .map(row -> calculateStartBasket(row, pair.getLeft()))
-                                .reduceWith(() -> pair.getLeft(), (x, y) -> {
-                                    x.getMonthlyReports().add(y);
-                                    return x;
+                                .reduceWith(pair::getLeft, (yearReport, monthReport) -> {
+                                    yearReport.getMonthlyReports().add(monthReport);
+                                    return yearReport;
                                 })
                 )
                 .reduce(new JsonArray(), (arr, br) -> arr.add(JsonObject.mapFrom(br)))

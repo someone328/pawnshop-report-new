@@ -45,6 +45,7 @@ public class Report {
     private BigDecimal silverTradeWeight = new BigDecimal(0.00);
     private BigDecimal diamondsTradeWeight = new BigDecimal(0.00);
     private BigDecimal goodsTradeSum = new BigDecimal(0.00);
+    private BigDecimal auctionAmount = new BigDecimal(0.00);
     private List<Expense> expenses = new ArrayList<>();
 
     public BigDecimal getExpensesSum() {
