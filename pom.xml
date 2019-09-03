@@ -238,6 +238,7 @@
                 <configuration>
                     <source>12</source>
                     <target>12</target>
+                    <compilerArgument>--enable-preview</compilerArgument>
                 </configuration>
             </plugin>
         </plugins>
