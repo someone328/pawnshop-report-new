@@ -1,5 +1,7 @@
 package com.insolence.pawnshop.report.verticles;
 
+import com.mongodb.MongoCommandException;
+import io.reactivex.Observable;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.DeploymentOptions;
@@ -13,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.insolence.pawnshop.report.http.handlers.CrudHandler.SupportedObjectTypes.USER;
+import static com.insolence.pawnshop.report.http.handlers.CrudHandler.SupportedObjectTypes.values;
 
 @Slf4j
 public class SelfDeployerVerticle extends AbstractVerticle {
@@ -60,8 +63,18 @@ public class SelfDeployerVerticle extends AbstractVerticle {
                         vertx,
                         new JsonObject().put("db_name", "pawnshop-report").put("host", mongoHost),
                         "pawnshop-report");
-        client
-                .rxFindOne(USER.name().toLowerCase(), adminUser, new JsonObject())
+
+        createTablesAndAdmin(adminUser, client);
+    }
+
+    private void createTablesAndAdmin(JsonObject adminUser, MongoClient client) {
+        Observable.fromArray(values())
+                .map(Enum::name)
+                .map(String::toLowerCase)
+                .flatMapCompletable(v -> client.rxCreateCollection(v))
+                .onErrorComplete(error -> error instanceof MongoCommandException && "NamespaceExists".equals(((MongoCommandException) error).getErrorCodeName()))
+                .toMaybe()
+                .concatWith(client.rxFindOne(USER.name().toLowerCase(), adminUser, new JsonObject()))
                 .subscribe(
                         admin -> {
                         },

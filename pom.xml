@@ -8,6 +8,10 @@
     <artifactId>starter</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
+    <scm>
+        <connection>scm:git:git@github.com:someone328/pawnshop-report-new.git</connection>
+    </scm>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
@@ -137,7 +141,7 @@
                         <image>openjdk:12-alpine</image>
                     </from>
                     <to>
-                        <image>docker.io/someone328/pawnshop-report</image>
+                        <image>docker.io/someone328/pawnshop-report:${project.version}</image>
                     </to>
                     <container>
                         <mainClass>io.vertx.core.Launcher</mainClass>
@@ -166,16 +170,29 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven-compiler-plugin.version}</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
                 <configuration>
-                    <release>12</release>
-                    <compilerArgs>--enable-preview</compilerArgs>
+                    <tagBase>svn://svn.zoo.com/zoo/tags</tagBase>
+                    <branchBase>svn://svn.zoo.com/zoo/branches</branchBase>
+                    <preparationGoals>clean install</preparationGoals>
+                    <goals>deploy</goals>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
                 </configuration>
             </plugin>
+
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+                <configuration>
+                    <tagNameFormat>@{project.version}</tagNameFormat>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <releaseProfiles>release</releaseProfiles>
+                </configuration>
+            </plugin>
+            <!--<plugin>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>${maven-shade-plugin.version}</version>
                 <executions>
@@ -205,7 +222,7 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>-->
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
@@ -230,16 +247,6 @@
                     </arguments>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>12</source>
-                    <target>12</target>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
-
-
 </project>
