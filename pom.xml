@@ -4,7 +4,7 @@
 
     <groupId>com.insolence.pawnshop.report</groupId>
     <artifactId>starter</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 
     <scm>
         <connection>scm:git:git@github.com:someone328/pawnshop-report-new.git</connection>
