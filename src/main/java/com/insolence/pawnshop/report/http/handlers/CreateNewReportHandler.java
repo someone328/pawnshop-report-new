@@ -38,52 +38,15 @@ public class CreateNewReportHandler implements Handler<RoutingContext> {
                         .setSort(new JsonObject().put("date", 1))
                         .setLimit(500));
 
-       /* client
-                .rxFindOne(
-                        "user",
-                        new JsonObject().put("username", user.principal().getValue("sub")),
-                        new JsonObject()
-                )
-                .flatMapSingle(
-                        userJson -> client.rxFindWithOptions(
-                                "report",
-                                new JsonObject().put("branch", userJson.getValue("_id")),
-                                new FindOptions()
-                                        .setSort(new JsonObject().put("date", 1))
-                                        .setLimit(500)
-                        )
-                .map(l -> l.iterator().next())
-                )*/
         reportsHistory
                 .flatMapObservable(list -> Observable.fromIterable(list))
                 .map(jo -> jo.mapTo(Report.class))
-                .doOnEach(System.out::println)
                 .reduceWith(ReportCalculations::new, this::calculateReportInfo)
                 //.map(lastReport -> this.createNewReport(null, lastReport))
                 .subscribe(
                         x -> rc.response().end(JsonObject.mapFrom(x).encodePrettily()),
                         error -> error.printStackTrace()
                 );
-
-        /*DeliveryOptions deliveryOptionsReport = new DeliveryOptions().addHeader("objectType", CrudHandler.SupportedObjectTypes.REPORT.name().toLowerCase());
-        DeliveryOptions deliveryOptionsUser = new DeliveryOptions().addHeader("objectType", CrudHandler.SupportedObjectTypes.USER.name().toLowerCase());
-
-        System.out.println(user.principal().getValue("sub"));
-
-        rc.vertx()
-                .eventBus()
-                .rxSend("crud.get", new JsonObject().put("username", user.principal().getValue("sub")), deliveryOptionsUser)
-                .map(m -> (JsonArray) m.body())
-                .map(arr -> arr.getJsonObject(0))
-                .flatMap(userJson -> rc.vertx()
-                        .eventBus()
-                        .rxSend("crud.get", new JsonObject().put("user", userJson.getValue("_id")).put("$max", "date"), deliveryOptionsReport))
-                .map(m -> (JsonArray) m.body())
-                .flatMapObservable(arr -> Observable.fromArray(arr))
-                .subscribe(
-                        report -> rc.response().end(report.encodePrettily()),
-                        error -> rc.response().setStatusCode(500).end(error.getMessage())
-                );*/
     }
 
     private ReportCalculations calculateReportInfo(ReportCalculations calculations, Report lastReport) {
@@ -97,11 +60,11 @@ public class CreateNewReportHandler implements Handler<RoutingContext> {
                         .subtract(tradesActive));
 
         calculations.setVolume(
-                calculations.getVolume().add(
-                        lastReport.getVolume()
-               /* calculations.getVolume()
-                        .add(noNull(lastReport.getLoanedRub()))
-                        .subtract(noNull(lastReport.getRepayedRub()))*/));
+                calculations.getVolume()
+                        .add(lastReport.getVolume())
+                        .subtract(lastReport.getGoldTradeSum())
+                        .subtract(lastReport.getSilverTradeSum())
+                        .subtract(lastReport.getGoodsTradeSum()));
 
         calculations.setGoldBalance(
                 calculations.getGoldBalance()

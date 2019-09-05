@@ -5,6 +5,7 @@ import io.reactivex.Observable;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.config.ConfigRetriever;
 import io.vertx.reactivex.core.AbstractVerticle;
@@ -56,7 +57,13 @@ public class SelfDeployerVerticle extends AbstractVerticle {
     private void initMongoClient(DeploymentOptions options) {
         JsonObject config = options.getConfig();
         String mongoHost = config.getJsonObject("database").getJsonObject("mongo").getString("host");
-        final var adminUser = new JsonObject().put("username", "admin").put("password", "cocacola#1");
+        final var adminUser = new JsonObject()
+                .put("username", "admin")
+                .put("password", "cocacola#1")
+                .put("roles", new JsonArray()
+                        .add("admin")
+                        .add("reviewer")
+                        .add("user"));
 
         MongoClient client =
                 MongoClient.createShared(

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.insolence.pawnshop.report</groupId>
@@ -8,8 +9,8 @@
 
     <scm>
         <connection>scm:git:git@github.com:someone328/pawnshop-report-new.git</connection>
-      <tag>1.0.0</tag>
-  </scm>
+        <tag>1.0.0</tag>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -140,7 +141,7 @@
                         <image>openjdk:12-alpine</image>
                     </from>
                     <to>
-                        <image>docker.io/someone328/pawnshop-report:${project.version}</image>
+                        <image>docker.io/someone328/pawnshop-report</image>
                     </to>
                     <container>
                         <mainClass>io.vertx.core.Launcher</mainClass>
@@ -168,16 +169,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.3</version>
-                <configuration>
-                    <tagNameFormat>@{project.version}</tagNameFormat>
-                    <autoVersionSubmodules>true</autoVersionSubmodules>
-                    <releaseProfiles>release</releaseProfiles>
-                </configuration>
             </plugin>
             <!--<plugin>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -230,14 +221,6 @@
                         <argument>-Dfile.encoding=UTF-8</argument>
                         <argument>-Denv=local</argument>
                     </arguments>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.1.1</version>
-                <configuration>
-                    <doclint>none</doclint>
                 </configuration>
             </plugin>
             <plugin>

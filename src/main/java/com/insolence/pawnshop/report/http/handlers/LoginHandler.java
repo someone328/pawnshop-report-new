@@ -2,6 +2,7 @@ package com.insolence.pawnshop.report.http.handlers;
 
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.jwt.JWTOptions;
 import io.vertx.reactivex.ext.auth.jwt.JWTAuth;
@@ -26,7 +27,7 @@ public class LoginHandler implements Handler<RoutingContext> {
                 .map(m -> (JsonObject) m.body())
                 .map(user -> {
                     var claims = new JsonObject().put("sub", user.getString("username"));
-                    var options = new JWTOptions().setExpiresInMinutes(30).setPermissions(user.getJsonArray("roles").getList());
+                    var options = new JWTOptions().setExpiresInMinutes(30).setPermissions(user.getJsonArray("roles", new JsonArray()).getList());
                     return user.put("token", authProvider.generateToken(claims, options));
                 })
                 .subscribe(
