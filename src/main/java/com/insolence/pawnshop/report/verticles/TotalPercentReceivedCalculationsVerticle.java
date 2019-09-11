@@ -47,6 +47,7 @@ public class TotalPercentReceivedCalculationsVerticle extends AbstractVerticle {
                                 return client.rxRunCommand("aggregate", command);
                             })
                             .map(cursor -> cursor.getJsonObject("cursor").getJsonArray("firstBatch").stream().findFirst().orElseGet(() -> new JsonObject().put("totalAmount", 0)))
+                            .doOnEvent((s, e) -> System.out.println(s))
                             .map(json -> ((JsonObject) json).getDouble("totalAmount"))
                             .flatMapSingle(message::rxReplyAndRequest)
                             .doOnError(e -> message.fail(500, e.getMessage()));
