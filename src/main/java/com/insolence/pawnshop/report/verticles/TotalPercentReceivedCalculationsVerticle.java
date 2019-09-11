@@ -38,6 +38,7 @@ public class TotalPercentReceivedCalculationsVerticle extends AbstractVerticle {
                     return client.rxFindOne(REPORT.name().toLowerCase(), new JsonObject().put("_id", reportId), new JsonObject())
                             .doOnComplete(() -> message.reply(0.0d))
                             //.map(report -> report.getLong("date"))
+                            .doOnEvent((s, e) -> System.out.println(s))
                             .flatMap(report -> {
                                 long startYear = startYearTimestampFrom(report.getLong("date"));
                                 JsonObject command = new JsonObject()
