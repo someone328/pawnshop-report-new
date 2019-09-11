@@ -101,6 +101,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                                     row.setMonthGoldTradeWeight(row.getMonthGoldTradeWeight().add(noNull(report.getGoldTradeWeight())));
                                                     row.setMonthSilverTradeSum(row.getMonthSilverTradeSum().add(noNull(report.getSilverTradeSum())));
                                                     row.setMonthSilverTradeWeight(row.getMonthSilverTradeWeight().add(noNull(report.getSilverTradeWeight())));
+                                                    row.setMonthlyGoodsTradeSum(row.getMonthlyGoodsTradeSum().add(noNull(report.getGoodsTradeSum())));
                                                     row.setLastReport(report);
 
                                                     return row;
@@ -153,14 +154,8 @@ public class StatisticsHandler implements Handler<RoutingContext> {
 
     private StatisticsReportForBranchRow calculateMonthTradeBalance(StatisticsReportForBranchRow row) {
         try {
-            var preciousMetalsSum = row.getMonthGoldTradeSum()
-                    .add(row.getMonthSilverTradeSum());
-            var preciousMetalsWeight = row.getMonthGoldTradeWeight().add(row.getMonthSilverTradeWeight());
             row.setMonthTradeBalance(
-                    preciousMetalsSum
-                            .divide(preciousMetalsWeight, 4, RoundingMode.HALF_UP)
-                            .multiply(goldBySilverContentDivision)
-                            .setScale(2, RoundingMode.HALF_UP)
+                    row.getMonthTradeBalance().add(row.getMonthGoldTradeSum().add(row.getMonthSilverTradeSum()).add(row.getMonthlyGoodsTradeSum()))
             );
             return row;
         } catch (Exception e) {
