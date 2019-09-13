@@ -18,7 +18,7 @@ public class TotalPercentReceivedCalculationsVerticle extends AbstractVerticle {
             "    {\n" +
             "        \"$group\": {\n" +
             "            \"_id\": { \"year\": { \"$year\": { \"$toDate\": { \"$toLong\": \"$date\" } } } },\n" +
-            "            \"totalAmount\": { \"$sum\": \"$percentRecieved\" },\n" +
+            "            \"totalAmount\": { \"$sum\": {\"$toDouble\": \"$percentRecieved\"} },\n" +
             "            \"count\": { \"$sum\": 1 }\n" +
             "        }\n" +
             "    }\n" +
@@ -37,8 +37,6 @@ public class TotalPercentReceivedCalculationsVerticle extends AbstractVerticle {
                     String reportId = (String) message.body();
                     return client.rxFindOne(REPORT.name().toLowerCase(), new JsonObject().put("_id", reportId), new JsonObject())
                             .doOnComplete(() -> message.reply(0.0d))
-                            //.map(report -> report.getLong("date"))
-                            .doOnEvent((s, e) -> System.out.println(s))
                             .flatMap(report -> {
                                 long startYear = startYearTimestampFrom(report.getLong("date"));
                                 JsonObject command = new JsonObject()
@@ -47,7 +45,6 @@ public class TotalPercentReceivedCalculationsVerticle extends AbstractVerticle {
                                         .put("cursor", new JsonObject());
                                 return client.rxRunCommand("aggregate", command);
                             })
-                            .doOnEvent((s, e) -> System.out.println(s))
                             .map(cursor -> cursor.getJsonObject("cursor").getJsonArray("firstBatch").stream().findFirst().orElseGet(() -> new JsonObject().put("totalAmount", 0)))
                             .map(json -> ((JsonObject) json).getDouble("totalAmount"))
                             .flatMapSingle(message::rxReplyAndRequest)
