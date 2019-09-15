@@ -84,10 +84,9 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                                 .reduce(new StatisticsReportForBranchRow(), (row, report) -> {
                                                     JsonObject firstReportInMonth = (JsonObject) Observable.fromIterable(month.getJsonArray("reports")).blockingFirst();
 
-
-                                                    System.out.println(month.getInteger("month") + " " + pair.getLeft().getBranchName());
                                                     row.setMonthNum(month.getInteger("month"));
                                                     row.setMonthlyVolumeSum(row.getMonthlyVolumeSum().add(noNull(report.getVolume())));
+                                                    row.setMonthTradeBalance(this.calculateMonthTradeBalance(row));
                                                     row.setMonthTradeSum(row.getMonthTradeSum().add(noNull(report.getAuctionAmount())));
                                                     row.setTradeIncome(row.getMonthTradeSum().subtract(row.getMonthTradeBalance()));
                                                     row.setCashboxStartMorning(firstReportInMonth.mapTo(Report.class).getCashboxMorning());
@@ -106,7 +105,6 @@ public class StatisticsHandler implements Handler<RoutingContext> {
 
                                                     return row;
                                                 }))
-                                .map(this::calculateMonthTradeBalance)
                                 .map(this::calculateMonthAverageBasket)
                                 .map(row -> calculateStartBasket(row, pair.getLeft()))
                                 .reduceWith(pair::getLeft, (yearReport, monthReport) -> {
@@ -152,15 +150,15 @@ public class StatisticsHandler implements Handler<RoutingContext> {
         return row;
     }
 
-    private StatisticsReportForBranchRow calculateMonthTradeBalance(StatisticsReportForBranchRow row) {
+    private BigDecimal calculateMonthTradeBalance(StatisticsReportForBranchRow row) {
         try {
-            row.setMonthTradeBalance(
-                    row.getMonthTradeBalance().add(row.getMonthGoldTradeSum().add(row.getMonthSilverTradeSum()).add(row.getMonthlyGoodsTradeSum()))
-            );
-            return row;
+            return row.getMonthTradeBalance().
+                    add(row.getMonthGoldTradeSum()
+                            .add(row.getMonthSilverTradeSum())
+                            .add(row.getMonthlyGoodsTradeSum()));
         } catch (Exception e) {
             row.errors.put("monthGoldTradeSum", "деление на ноль");
+            return BigDecimal.ZERO;
         }
-        return row;
     }
 }
