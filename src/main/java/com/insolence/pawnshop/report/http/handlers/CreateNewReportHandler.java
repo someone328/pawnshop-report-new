@@ -87,7 +87,8 @@ public class CreateNewReportHandler implements Handler<RoutingContext> {
         calculations.setGoodsBalance(
                 calculations.getGoodsBalance()
                         .subtract(noNull(lastReport.getGoodsSold()))
-                        .add(noNull(lastReport.getGoodsBought())));
+                        .add(noNull(lastReport.getGoodsBought()))
+                        .subtract(noNull(lastReport.getGoodsTradeSum())));
 
         calculations.setCashboxEvening(noNull(lastReport.getCashboxEvening()));
 
