@@ -46,7 +46,6 @@ public class CrudHandler implements Handler<RoutingContext> {
                 .filter(Pair::getRight)
                 .take(1)
                 .switchIfEmpty(Observable.error(new RuntimeException()))
-                .doOnEach(System.out::println)
                 .subscribe(
                         success -> {
                             DeliveryOptions deliveryOptions = new DeliveryOptions().addHeader("objectType", objectType);
@@ -59,8 +58,6 @@ public class CrudHandler implements Handler<RoutingContext> {
                             }
                         },
                         error -> rc.response().setStatusCode(403).end("User not permitted for requested operation"));
-
-
     }
 
     private void processDeleteOperation(RoutingContext rc, DeliveryOptions deliveryOptions, JsonObject jsonBody) {

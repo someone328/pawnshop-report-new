@@ -1,0 +1,96 @@
+//@no-log
+POST http://{{host}}:8181/login
+Accept: */*
+Accept-Charset: UTF-8
+Cache-Control: no-cache
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "cocacola#1"
+}
+> {%
+client.global.set('auth_token', response.body.token);
+client.test("Headers option exists", function() {
+        client.assert(response.body.hasOwnProperty("token"), "Cannot find 'token' field in response");
+    });
+%}
+
+###
+
+POST http://{{host}}:8181/protected/v1/crud/report/get
+Accept: */*
+Authorization: Bearer {{auth_token}}
+Cache-Control: no-cache
+Content-Type: application/json
+
+{}
+
+###
+
+GET http://{{host}}:8181/protected/v1/newReport
+Accept: */*
+Authorization: Bearer {{auth_token}}
+Cache-Control: no-cache
+Content-Type: application/json
+
+{}
+
+###
+
+POST http://{{host}}:8181/protected/v1/crud/report/get/previous
+Accept: */*
+Authorization: Bearer {{auth_token}}
+Cache-Control: no-cache
+Content-Type: application/json
+
+{
+  "reportId": "5d40b17014ce4a692cce08af"
+}
+
+###
+
+POST http://{{host}}:8181/protected/v1/calculateDynamics
+Accept: */*
+Authorization: Bearer {{auth_token}}
+Cache-Control: no-cache
+Content-Type: application/json
+
+{
+  "branchId": "5d3775e442105000ccc036ee",
+  "reportDate": "1565038800000"
+}
+
+###
+
+GET http://{{host}}:8181/protected/v1/statistics
+Accept: */*
+Authorization: Bearer {{auth_token}}
+Cache-Control: no-cache
+Content-Type: application/json
+
+###
+
+GET http://{{host}}:8181/protected/v1/dailyReport/1546376400000
+Accept: */*
+Authorization: Bearer {{auth_token}}
+Cache-Control: no-cache
+Content-Type: application/json
+
+###
+
+GET http://{{host}}:8181/protected/v1/backup
+Accept: */*
+Authorization: Bearer {{auth_token}}
+Cache-Control: no-cache
+Content-Type: application/json
+
+###
+
+GET http://{{host}}:8181/protected/v1/totalPercent/5d72a45aa6fd3f2514ccc5b0
+Accept: */*
+Authorization: Bearer {{auth_token}}
+Cache-Control: no-cache
+Content-Type: application/json
+
+###
