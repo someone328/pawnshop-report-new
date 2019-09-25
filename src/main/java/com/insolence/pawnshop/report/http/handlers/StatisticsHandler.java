@@ -93,7 +93,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                                     row.setCashboxEndMorning(report.getCashboxEvening());
                                                     row.setMonthLoanRub(row.getMonthLoanRub().add(noNull(report.getLoanedRub())));
                                                     row.setMonthRepayRub(row.getMonthRepayRub().add(noNull(report.getRepayedRub())));
-                                                    row.setEndBasket(noNull(report.getVolume()));
+                                                    row.setEndBasket(noNull(report.getBalancedVolume()));
                                                     row.setMonthExpenses(row.getMonthExpenses().add(noNull(report.getExpensesSum())));
                                                     //
                                                     row.setMonthGoldTradeSum(row.getMonthGoldTradeSum().add(noNull(report.getGoldTradeSum())));
@@ -139,7 +139,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                         row.setStartBasket(report1.getVolume());
                     });
         } else {
-            BigDecimal bigDecimal = report.getMonthlyReports().stream().map(r -> r.getLastReport().getVolume()).reduce((f, s) -> s).orElseGet(() -> BigDecimal.ZERO);
+            BigDecimal bigDecimal = report.getMonthlyReports().stream().map(r -> r.getLastReport().getBalancedVolume()).reduce((f, s) -> s).orElseGet(() -> BigDecimal.ZERO);
             row.setStartBasket(bigDecimal);
         }
         return row;
