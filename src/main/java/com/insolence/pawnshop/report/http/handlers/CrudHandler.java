@@ -62,21 +62,23 @@ public class CrudHandler implements Handler<RoutingContext> {
                 .flatMapSingle(role -> rc.user()
                         .rxIsAuthorized(role)
                         .map(b -> Pair.of(role, b)))
-                .filter(Pair::getRight)
-                .take(1)
-                .switchIfEmpty(Observable.error(new RuntimeException()))
+                .reduce(Boolean.FALSE, (one, two) -> Boolean.logicalOr(one, two.getRight()))
                 .subscribe(
                         success -> {
-                            DeliveryOptions deliveryOptions = new DeliveryOptions().addHeader("objectType", objectType);
-                            JsonObject jsonBody = rc.getBodyAsJson();
-                            switch (operationTypeEnum) {
-                                case PUT -> processPutOperation(rc, deliveryOptions, jsonBody);
-                                case GET -> processGetOperation(rc, deliveryOptions, jsonBody);
-                                case DELETE -> processDeleteOperation(rc, deliveryOptions, jsonBody);
-                                default -> rc.response().setStatusCode(400).end("Unsupported operationType type " + operationType);
+                            if(!success){
+                                rc.response().setStatusCode(403).end("User not permitted for requested operation");
+                            } else {
+                                DeliveryOptions deliveryOptions = new DeliveryOptions().addHeader("objectType", objectType);
+                                JsonObject jsonBody = rc.getBodyAsJson();
+                                switch (operationTypeEnum) {
+                                    case PUT -> processPutOperation(rc, deliveryOptions, jsonBody);
+                                    case GET -> processGetOperation(rc, deliveryOptions, jsonBody);
+                                    case DELETE -> processDeleteOperation(rc, deliveryOptions, jsonBody);
+                                    default -> rc.response().setStatusCode(400).end("Unsupported operationType type " + operationType);
+                                }
                             }
                         },
-                        error -> rc.response().setStatusCode(403).end("User not permitted for requested operation"));
+                        error -> rc.response().setStatusCode(500).end(error.getMessage()));
     }
 
     private void processDeleteOperation(RoutingContext rc, DeliveryOptions deliveryOptions, JsonObject jsonBody) {
@@ -115,7 +117,7 @@ public class CrudHandler implements Handler<RoutingContext> {
     //TODO доделать прокидывание сообщений валидации
     private void processPutOperation(RoutingContext rc, DeliveryOptions deliveryOptions, JsonObject jsonBody) {
         SupportedObjectTypes objectType = SupportedObjectTypes.valueOf(deliveryOptions.getHeaders().get("objectType").toUpperCase());
-        List<BiFunction<JsonObject, RoutingContext, Single<Boolean>>> validations = putValidations.get(objectType);
+        List<BiFunction<JsonObject, RoutingContext, Single<Boolean>>> validations = putValidations.computeIfAbsent(objectType, k -> new ArrayList<>());
         Observable.fromIterable(validations)
                 .subscribeOn(Schedulers.io())
                 .flatMapSingle(f -> f.apply(jsonBody, rc))
