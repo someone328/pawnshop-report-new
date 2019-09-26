@@ -48,9 +48,9 @@ public class CrudVerticle extends AbstractVerticle {
                             if (body.containsKey("_id")) {
                                 upsert = client.rxFindOneAndReplaceWithOptions(
                                         message.headers().get("objectType"),
-                                        new JsonObject().put("_id", body.getValue("_id"))
-                                                .put("$or", new JsonArray().add(new JsonObject().put("version", (body.getLong("version") - 1)))
-                                                        .add(new JsonObject().put("version", new JsonObject().put("$exists", false)))),
+                                        new JsonObject().put("_id", body.getValue("_id")),
+                                                /*.put("$or", new JsonArray().add(new JsonObject().put("version", (body.getLong("version") - 1)))
+                                                        .add(new JsonObject().put("version", new JsonObject().put("$exists", false)))),*/
                                         body,
                                         new FindOptions(),
                                         new UpdateOptions().setUpsert(true).setReturningNewDocument(true))
