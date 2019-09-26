@@ -36,9 +36,39 @@ Cache-Control: no-cache
 Content-Type: application/json
 
 {
-  "_id":"5d8149ab940ea858d498e16c",
-  "name":"Отделение 8",
-  "address":"88 88"
+  "_id": "5d8d38e72f89b760bc6d5b88",
+  "branch": "5d3775e442105000ccc036ee",
+  "user": "5d5271865e97dc0971b6efe0",
+  "date": 1566864000000,
+  "loanersPawned": 3.0,
+  "loanersBought": 2.0,
+  "loanedRub": 1000.0,
+  "repayedRub": 200.0,
+  "percentRecieved": 100.0,
+  "goldBought": 30.0,
+  "goldSold": 20.0,
+  "silverBought": "0",
+  "silverSold": "0",
+  "diamondBought": "0",
+  "diamondSold": "0",
+  "goodsBought": 1000.0,
+  "goodsSold": "0",
+  "cashboxEvening": 3000.0,
+  "tradesActive": 10.0,
+  "goldTradeSum": 10000.0,
+  "goldTradeWeight": 300.0,
+  "silverTradeSum": "0",
+  "silverTradeWeight": "0",
+  "diamondsTradeWeight": "0",
+  "goodsTradeSum": "0",
+  "expenses": [
+    {
+      "id": "1566893989655",
+      "name": "такси",
+      "sum": 1000.0
+    }
+  ],
+  "auctionAmount": "0"
 }
 
 ###

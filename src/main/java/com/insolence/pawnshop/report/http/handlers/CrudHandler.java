@@ -155,6 +155,9 @@ public class CrudHandler implements Handler<RoutingContext> {
         List<BiFunction<JsonObject, RoutingContext, Single<Boolean>>> reportValidations = putValidations.computeIfAbsent(REPORT, k -> new ArrayList<>());
         reportValidations.add((reportJson, rc) -> {
             Report report = reportJson.mapTo(Report.class);
+            if(report.get_id() != null){
+                return Single.just(Boolean.TRUE);
+            }
             return rc.vertx().eventBus()
                     .rxSend("crud.get",
                             new JsonObject().put("branch", report.getBranch()).put("date", report.getDate()),
