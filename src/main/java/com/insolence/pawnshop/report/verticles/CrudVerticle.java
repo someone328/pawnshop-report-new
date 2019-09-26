@@ -1,8 +1,11 @@
 package com.insolence.pawnshop.report.verticles;
 
+import com.mongodb.MongoException;
 import io.reactivex.Maybe;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.mongo.FindOptions;
+import io.vertx.ext.mongo.UpdateOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.ext.mongo.MongoClient;
 import lombok.extern.slf4j.Slf4j;
@@ -39,14 +42,23 @@ public class CrudVerticle extends AbstractVerticle {
                 .flatMapSingle(
                         message -> {
                             JsonObject body = (JsonObject) message.body();
+                            body.put("version", (body.getLong("version", 0L) + 1L));
                             Maybe<String> upsert;
+
                             if (body.containsKey("_id")) {
-                                upsert =
-                                        client
-                                                .rxSave(message.headers().get("objectType"), body)
-                                                .defaultIfEmpty(body.getString("_id"));
+                                upsert = client.rxFindOneAndReplaceWithOptions(
+                                        message.headers().get("objectType"),
+                                        new JsonObject().put("_id", body.getValue("_id"))
+                                                .put("$or", new JsonArray().add(new JsonObject().put("version", (body.getLong("version") - 1)))
+                                                        .add(new JsonObject().put("version", new JsonObject().put("$exists", false)))),
+                                        body,
+                                        new FindOptions(),
+                                        new UpdateOptions().setUpsert(true).setReturningNewDocument(true))
+                                        .map(doc -> doc.getString("_id"))
+                                        .doOnError(e -> message.fail(((MongoException) e).getCode(), e.getMessage()));
                             } else {
-                                upsert = client.rxSave(message.headers().get("objectType"), body);
+                                upsert = client.rxSave(message.headers().get("objectType"), body)
+                                        .doOnError(e -> message.fail(((MongoException) e).getCode(), e.getMessage()));
                             }
                             return upsert.flatMapSingle(res -> message.rxReply(res));
                         })
@@ -85,7 +97,6 @@ public class CrudVerticle extends AbstractVerticle {
     }
 
     private JsonObject GetInterceptor(JsonObject entry) {
-
 
 
         return entry;

@@ -3,6 +3,7 @@ package com.insolence.pawnshop.report.verticles;
 import com.insolence.pawnshop.report.http.handlers.*;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.PubSecKeyOptions;
@@ -67,6 +68,13 @@ public class HttpServerVertx extends AbstractVerticle {
         router.get("/protected/v1/dailyReport/:timestamp").handler(new DailyReportHandler());
         router.get("/protected/v1/totalPercent/:reportId").handler(new TotalPercentHandler());
         router.get("/protected/v1/backup").handler(new BackUpHandler());
+
+        router.errorHandler(11000, rc -> {
+            rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html; charset=utf-8").setStatusCode(500).end("Версия объекта не актуальна.");
+        });
+        router.errorHandler(100000, rc -> {
+            rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html; charset=utf-8").setStatusCode(500).end("Такой обьект уже существует.");
+        });
 
         /** hystrix mectrix */
     /*
