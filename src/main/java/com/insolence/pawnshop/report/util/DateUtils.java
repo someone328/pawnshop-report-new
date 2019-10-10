@@ -10,7 +10,7 @@ public class DateUtils {
         return LocalDate.now().withDayOfYear(1).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
     }
 
-    public static long startYearTimestampFrom(long timestamp){
+    public static long startYearTimestampFrom(long timestamp) {
         Instant instant = Instant.ofEpochMilli(timestamp);
         return LocalDate.ofInstant(instant, ZoneId.of("UTC")).withDayOfYear(1).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
     }

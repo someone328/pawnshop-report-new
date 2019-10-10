@@ -2,28 +2,26 @@ package com.insolence.pawnshop.report.http.handlers;
 
 import com.insolence.pawnshop.report.domain.Report;
 import com.insolence.pawnshop.report.util.Pair;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
-import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.DeliveryOptions;
-import io.vertx.core.eventbus.ReplyException;
-import io.vertx.core.eventbus.ReplyFailure;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static com.insolence.pawnshop.report.http.handlers.CrudHandler.Operarions.*;
 import static com.insolence.pawnshop.report.http.handlers.CrudHandler.SupportedObjectTypes.REPORT;
@@ -31,9 +29,9 @@ import static com.insolence.pawnshop.report.http.handlers.CrudHandler.SupportedO
 @Slf4j
 public class CrudHandler implements Handler<RoutingContext> {
 
-    private Map<SupportedObjectTypes, List<BiFunction<JsonObject, RoutingContext, Single<Boolean>>>> putValidations = new HashMap<>();
+    private Map<SupportedObjectTypes, List<BiFunction<JsonObject, RoutingContext, Maybe<Pair<Integer, String>>>>> putValidations = new HashMap<>();
 
-    public CrudHandler(){
+    public CrudHandler() {
         initValidations();
     }
 
@@ -65,7 +63,7 @@ public class CrudHandler implements Handler<RoutingContext> {
                 .reduce(Boolean.FALSE, (one, two) -> Boolean.logicalOr(one, two.getRight()))
                 .subscribe(
                         success -> {
-                            if(!success){
+                            if (!success) {
                                 rc.response().setStatusCode(403).end("User not permitted for requested operation");
                             } else {
                                 DeliveryOptions deliveryOptions = new DeliveryOptions().addHeader("objectType", objectType);
@@ -103,13 +101,14 @@ public class CrudHandler implements Handler<RoutingContext> {
                 .eventBus()
                 .rxSend("crud.get", jsonBody, deliveryOptions)
                 .map(response -> response.body().toString())
+                .doOnError(e -> log.error("Crud get error. ", e))
                 .subscribe(
                         crudResult ->
                                 rc.response()
                                         .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
                                         .end(crudResult),
                         error -> {
-                            log.error("Crud handler error. ", error);
+                            log.error("Crud get error. ", error);
                             rc.fail(500);
                         });
     }
@@ -117,33 +116,31 @@ public class CrudHandler implements Handler<RoutingContext> {
     //TODO доделать прокидывание сообщений валидации
     private void processPutOperation(RoutingContext rc, DeliveryOptions deliveryOptions, JsonObject jsonBody) {
         SupportedObjectTypes objectType = SupportedObjectTypes.valueOf(deliveryOptions.getHeaders().get("objectType").toUpperCase());
-        List<BiFunction<JsonObject, RoutingContext, Single<Boolean>>> validations = putValidations.computeIfAbsent(objectType, k -> new ArrayList<>());
+        List<BiFunction<JsonObject, RoutingContext, Maybe<Pair<Integer, String>>>> validations = putValidations.computeIfAbsent(objectType, k -> new ArrayList<>());
         Observable.fromIterable(validations)
                 .subscribeOn(Schedulers.io())
-                .flatMapSingle(f -> f.apply(jsonBody, rc))
-                .reduce(Boolean.TRUE, (one, two) -> one && two)
-                .flatMap(isValid -> {
-                    if(!isValid){
-                        throw new ReplyException(ReplyFailure.RECIPIENT_FAILURE, 100000, "Дубликат");
+                .flatMapMaybe(f -> f.apply(jsonBody, rc))
+                .toList()
+                .flatMapMaybe(list -> {
+                    if (list.size() == 0) {
+                        return Maybe.empty();
                     }
-                    return rc.vertx()
-                            .eventBus()
-                            .rxSend("crud.put", jsonBody, deliveryOptions);
+                    rc.fail(400, new Exception(list.toString()));
+                    return Maybe.just(list.toString());
                 })
-                .map(response -> response.body().toString())
+                .switchIfEmpty(rc.vertx()
+                        .eventBus()
+                        .rxSend("crud.put", jsonBody, deliveryOptions)
+                        .map(message -> (String) message.body()))
                 .subscribe(
-                        crudResult ->
-                                rc.response()
-                                        .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
-                                        .end(crudResult),
+                        crudResult -> rc.response()
+                                .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
+                                .end("Success"),
                         error -> {
-                            log.error("Crud handler error. ", error);
-                            if (error instanceof ReplyException) {
-                                rc.fail(((ReplyException) error).failureCode(), error);
-                            } else {
-                                rc.fail(500, error);
-                            }
-                        });
+                            log.error("Crud error", error);
+                            rc.fail(500, error);
+                        }
+                );
     }
 
     public boolean isSupportableType(String type) {
@@ -152,20 +149,28 @@ public class CrudHandler implements Handler<RoutingContext> {
 
     //TODO причесать, вынести в отдельный классы?
     private void initValidations() {
-        List<BiFunction<JsonObject, RoutingContext, Single<Boolean>>> reportValidations = putValidations.computeIfAbsent(REPORT, k -> new ArrayList<>());
-        reportValidations.add((reportJson, rc) -> {
+        BiFunction<JsonObject, RoutingContext, Maybe<Pair<Integer, String>>> isDuplicateCheck = (reportJson, rc) -> {
             Report report = reportJson.mapTo(Report.class);
-            if(report.get_id() != null){
-                return Single.just(Boolean.TRUE);
+            if (report.get_id() != null) {
+                return Maybe.empty();
             }
             return rc.vertx().eventBus()
                     .rxSend("crud.get",
                             new JsonObject().put("branch", report.getBranch()).put("date", report.getDate()),
-                            new DeliveryOptions().addHeader("objectType", REPORT.name().toLowerCase()))
-                    .map(response -> (JsonArray)response.body())
+                            new DeliveryOptions().addHeader("objectType", REPORT.name().toLowerCase()).setSendTimeout(2000))
+                    .map(response -> (JsonArray) response.body())
+                    .doOnEvent((s, e) -> System.out.println(Thread.currentThread().getName()))
                     .map(JsonArray::size)
-                    .map(size -> size == 0);
-        });
+                    .map(size -> size == 0)
+                    .flatMapMaybe(b -> b ?
+                            Maybe.empty() :
+                            Maybe.just(
+                                    Pair.of(10000,
+                                            "Дубликат отчета. " + Instant.ofEpochMilli(report.getDate()).atZone(ZoneId.of("UTC")).toLocalDate() + ":" + report.getBranch())))
+                    .doOnError(e -> log.error("isDuplicateCheck", e));
+        };
+        List<BiFunction<JsonObject, RoutingContext, Maybe<Pair<Integer, String>>>> reportValidations = putValidations.computeIfAbsent(REPORT, k -> new ArrayList<>());
+        reportValidations.add(isDuplicateCheck);
     }
 
     @AllArgsConstructor

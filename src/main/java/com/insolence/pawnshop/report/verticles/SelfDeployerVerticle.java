@@ -1,7 +1,9 @@
 package com.insolence.pawnshop.report.verticles;
 
+import com.insolence.pawnshop.report.http.handlers.CrudHandler.SupportedObjectTypes;
 import com.mongodb.MongoCommandException;
 import io.reactivex.Observable;
+import io.reactivex.plugins.RxJavaPlugins;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.DeploymentOptions;
@@ -16,7 +18,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.insolence.pawnshop.report.http.handlers.CrudHandler.SupportedObjectTypes.USER;
-import static com.insolence.pawnshop.report.http.handlers.CrudHandler.SupportedObjectTypes.values;
 
 @Slf4j
 public class SelfDeployerVerticle extends AbstractVerticle {
@@ -29,6 +30,7 @@ public class SelfDeployerVerticle extends AbstractVerticle {
 
     @Override
     public void start() throws Exception {
+        RxJavaPlugins.setErrorHandler(e -> log.error("Main error handler", e));
         String envName = System.getProperty("env", "prod");
         ConfigStoreOptions store =
                 new ConfigStoreOptions()
@@ -75,13 +77,16 @@ public class SelfDeployerVerticle extends AbstractVerticle {
     }
 
     private void createTablesAndAdmin(JsonObject adminUser, MongoClient client) {
-        Observable.fromArray(values())
+        Observable.fromArray(SupportedObjectTypes.values())
                 .map(Enum::name)
                 .map(String::toLowerCase)
                 .flatMapCompletable(v -> client.rxCreateCollection(v))
                 .onErrorComplete(error -> error instanceof MongoCommandException && "NamespaceExists".equals(((MongoCommandException) error).getErrorCodeName()))
-                .toMaybe()
-                .concatWith(client.rxFindOne(USER.name().toLowerCase(), adminUser, new JsonObject()))
+                .andThen(client.rxFindOne(USER.name().toLowerCase(),
+                        new JsonObject()
+                                .put("username", "admin")
+                                .put("password", "cocacola#1"),
+                        new JsonObject()))
                 .subscribe(
                         admin -> {
                         },

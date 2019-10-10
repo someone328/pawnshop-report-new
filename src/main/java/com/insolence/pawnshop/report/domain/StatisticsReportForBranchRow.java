@@ -9,6 +9,8 @@ import java.util.Map;
 
 @Data
 public class StatisticsReportForBranchRow {
+    //
+    public Map<String, String> errors = new HashMap<>();
     private int monthNum;
     private BigDecimal monthAverageBasket = BigDecimal.ZERO;
     private BigDecimal monthTradeBalance = BigDecimal.ZERO;
@@ -21,8 +23,6 @@ public class StatisticsReportForBranchRow {
     private BigDecimal startBasket = BigDecimal.ZERO;
     private BigDecimal endBasket = BigDecimal.ZERO;
     private BigDecimal monthExpenses = BigDecimal.ZERO;
-    //
-    public Map<String, String> errors = new HashMap<>();
     @JsonIgnore
     private BigDecimal monthGoldTradeSum = BigDecimal.ZERO;
     @JsonIgnore

@@ -29,14 +29,13 @@ Content-Type: application/json
 
 ###
 
-POST http://{{host}}:8181/protected/v1/crud/branch/put
+POST http://{{host}}:8181/protected/v1/crud/report/put
 Accept: */*
 Authorization: Bearer {{auth_token}}
 Cache-Control: no-cache
 Content-Type: application/json
 
 {
-  "_id": "5d8d38e72f89b760bc6d5b88",
   "branch": "5d3775e442105000ccc036ee",
   "user": "5d5271865e97dc0971b6efe0",
   "date": 1566864000000,

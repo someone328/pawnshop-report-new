@@ -58,7 +58,7 @@ public class Report {
     public BigDecimal getBalancedVolume (){return  noNull(getVolume()).subtract(noNull(getDailyTradeSum()));}
     public BigDecimal getDailyTradeSum() {return noNull(goldTradeSum).add(noNull(silverTradeSum)).add(noNull(goodsTradeSum));}
 
-    public BigDecimal getPawnersRate(){
+    public BigDecimal getPawnersRate() {
         return getLoanersPawned().subtract(getLoanersBought());
     }
 }

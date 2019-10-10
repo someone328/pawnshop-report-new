@@ -1,7 +1,6 @@
 package com.insolence.pawnshop.report.domain;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -35,7 +34,7 @@ public class DailyReport {
     }
 
     @JsonGetter("perBranch")
-    public List<DailyReportPerBranch> perBranch(){
+    public List<DailyReportPerBranch> perBranch() {
         return perBranch.values().stream().collect(Collectors.toList());
     }
 

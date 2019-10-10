@@ -1,9 +1,7 @@
 package com.insolence.pawnshop.report.domain;
 
 import lombok.Data;
-import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 
 @Data
