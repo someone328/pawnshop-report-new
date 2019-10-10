@@ -132,10 +132,14 @@ public class CrudHandler implements Handler<RoutingContext> {
                         .eventBus()
                         .rxSend("crud.put", jsonBody, deliveryOptions)
                         .map(message -> (String) message.body()))
-                .subscribe(
-                        crudResult -> rc.response()
-                                .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
-                                .end("Success"),
+                .subscribe(result -> {
+                            if (rc.failed()) {
+                                return;
+                            }
+                            rc.response()
+                                    .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
+                                    .end("Success");
+                        },
                         error -> {
                             log.error("Crud error", error);
                             rc.fail(500, error);

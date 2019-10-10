@@ -65,6 +65,9 @@ public class HttpServerVertx extends AbstractVerticle {
         router.get("/protected/v1/totalPercent/:reportId").handler(new TotalPercentHandler());
         router.get("/protected/v1/backup").handler(new BackUpHandler());
 
+        router.errorHandler(400, rc -> {
+            rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html; charset=utf-8").setStatusCode(400).end(rc.failure().getMessage());
+        });
         router.errorHandler(11000, rc -> {
             rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html; charset=utf-8").setStatusCode(500).end("Версия объекта не актуальна.");
         });
