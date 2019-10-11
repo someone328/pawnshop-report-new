@@ -26,28 +26,43 @@ import static com.insolence.pawnshop.report.util.DateUtils.getCurrentYearStartTi
 
 @Slf4j
 public class StatisticsHandler implements Handler<RoutingContext> {
-    private static final String statisticsRequest = "[\n" +
-            "    {\n" +
-            "        \"$match\": {\n" +
-            "            \"branch\": {\"$ne\": null},\n" +
-            "            \"date\": {\"$gte\": %s}\n" +
+    private static final String statisticsRequest = "[{\"$match\": {\"branch\": {\"$ne\": null},\"date\": {\"$gte\": %s}}},\n" +
+            "{\n" +
+            "    \"$lookup\":{\n" +
+            "        \"from\":\"report\",\n" +
+            "        \"let\":{\"report_branch\":\"$branch\", \"report_date\":\"$date\"},\n" +
+            "        \"pipeline\":[\n" +
+            "            {\"$match\":{\n" +
+            "                \"$expr\":{\n" +
+            "                    \"$and\":[\n" +
+            "                    {\"$eq\":[\"$branch\",\"$$report_branch\"]},\n" +
+            "                    {\"$lt\":[\"$date\",\"$$report_date\"]}\n" +
+            "                    ]}}},\n" +
+            "            {\"$sort\":{\"date\":-1}},\n" +
+            "            {\"$limit\":1},\n" +
+            "            {\"$project\":{\"_id\":0, \"cashboxEvening\":1}}\n" +
+            "        ],\n" +
+            "        \"as\":\"cashboxMorning\"\n" +
             "        }\n" +
             "    },\n" +
-            "    {   \"$sort\": {\"branch\": 1, \"date\": 1}},\n" +
-            "    {   \"$lookup\": {\"from\": \"report\", \"localField\": \"_id\", \"foreignField\": \"_id\", \"as\": \"report\"}},\n" +
-            "    {\n" +
-            "        \"$group\": {\n" +
-            "            \"_id\": {\"branch\": \"$branch\", \"month\": {\"$month\": {\"$toDate\": \"$date\"}}},\n" +
-            "            \"documentCount\": {\"$sum\": 1},\n" +
-            "            \"reports\": {\"$push\": {\"$arrayElemAt\" :[\"$report\", 0]}}\n" +
-            "        }\n" +
-            "    },\n" +
-            "    {\n" +
-            "        \"$group\": {\n" +
-            "            \"_id\": {\"branch\": \"$_id.branch\"},\n" +
-            "            \"reportStatIndex\": {\"$push\": {\"month\": \"$_id.month\", \"reports\": \"$reports\"}}\n" +
-            "        }\n" +
-            "    },\n" +
+            "    {\"$unwind\":\"$cashboxMorning\"},\n" +
+            "     {\"$project\":{\"_id\":1, \"branch\": 1, \"user\": 1, \"date\": 1, \"loanersPawned\":1, \"loanersBought\": 1, \"loanedRub\": 1,     \"repayedRub\": 1,\"percentRecieved\": 1,\"goldBought\": 1,\"goldSold\": 1,\"silverBought\": 1,\n" +
+            "    \"silverSold\": 1,\"diamondBought\": 1,\"diamondSold\": 1,\"goodsBought\": 1,\"goodsSold\": 1,\"cashboxEvening\": 1,\n" +
+            "    \"cashboxMorning\":\"$cashboxMorning.cashboxEvening\",\"tradesActive\": 1,\"goldTradeSum\": 1,\"goldTradeWeight\": 1,\n" +
+            "    \"silverTradeSum\": 1,\"silverTradeWeight\": 1,\"diamondsTradeWeight\": 1,\"goodsTradeSum\": 1,\"expenses\": 1,\n" +
+            "    \"auctionAmount\": 1,\"version\":1}},\n" +
+            "    {\"$sort\": {\"branch\": 1, \"date\": 1}},\n" +
+            "    {\"$lookup\":{\"from\":\"report\",\"localField\":\"_id\",\"foreignField\":\"_id\",\"as\":\"report\"}},        \n" +
+            "    {\"$addFields\":{\"report.cashboxMorning\":\"$cashboxMorning\"}},\n" +
+            "    {\"$group\": {\n" +
+            "        \"_id\": {\"branch\": \"$branch\", \"month\": {\"$month\": {\"$toDate\": \"$date\"}}},\n" +
+            "        \"documentCount\": {\"$sum\": 1},\n" +
+            "        \"reports\": {\"$push\": {\"$arrayElemAt\" :[\"$report\", 0]}}\n" +
+            "    }},\n" +
+            "    {\"$group\": {\n" +
+            "        \"_id\": {\"branch\": \"$_id.branch\"},\n" +
+            "        \"reportStatIndex\": {\"$push\": {\"month\": \"$_id.month\", \"reports\": \"$reports\"}}\n" +
+            "    }},\n" +
             "    {\"$unwind\": \"$reportStatIndex\"},\n" +
             "    {\"$sort\": {\"reportStatIndex.month\": 1}},\n" +
             "    {\"$group\": {\"_id\": \"$_id\", \"reportStatIndex\": {\"$push\": \"$reportStatIndex\"}}},\n" +
@@ -89,7 +104,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                                     row.setMonthTradeBalance(this.calculateMonthTradeBalance(row));
                                                     row.setMonthTradeSum(row.getMonthTradeSum().add(noNull(report.getAuctionAmount())));
                                                     row.setTradeIncome(row.getMonthTradeSum().subtract(row.getMonthTradeBalance()));
-                                                    row.setCashboxStartMorning(firstReportInMonth.mapTo(Report.class).getCashboxMorning());
+                                                    row.setCashboxStartMorning(report.getCashboxMorning());
                                                     row.setCashboxEndMorning(report.getCashboxEvening());
                                                     row.setMonthLoanRub(row.getMonthLoanRub().add(noNull(report.getLoanedRub())));
                                                     row.setMonthRepayRub(row.getMonthRepayRub().add(noNull(report.getRepayedRub())));
