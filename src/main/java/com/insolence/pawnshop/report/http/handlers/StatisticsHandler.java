@@ -104,7 +104,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                                     row.setMonthTradeBalance(this.calculateMonthTradeBalance(row));
                                                     row.setMonthTradeSum(row.getMonthTradeSum().add(noNull(report.getAuctionAmount())));
                                                     row.setTradeIncome(row.getMonthTradeSum().subtract(row.getMonthTradeBalance()));
-                                                    row.setCashboxStartMorning(report.getCashboxMorning());
+                                                    row.setCashboxStartMorning(firstReportInMonth.mapTo(Report.class).getCashboxMorning());
                                                     row.setCashboxEndMorning(report.getCashboxEvening());
                                                     row.setMonthLoanRub(row.getMonthLoanRub().add(noNull(report.getLoanedRub())));
                                                     row.setMonthRepayRub(row.getMonthRepayRub().add(noNull(report.getRepayedRub())));
