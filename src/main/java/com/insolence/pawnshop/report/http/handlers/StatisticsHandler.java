@@ -98,12 +98,9 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                                 .map(x -> ((JsonObject) x).mapTo(Report.class))
                                                 .reduce(new StatisticsReportForBranchRow(), (row, report) -> {
                                                     JsonObject firstReportInMonth = (JsonObject) Observable.fromIterable(month.getJsonArray("reports")).blockingFirst();
-
                                                     row.setMonthNum(month.getInteger("month"));
                                                     row.setMonthlyVolumeSum(row.getMonthlyVolumeSum().add(noNull(report.getVolume())));
-                                                    row.setMonthTradeBalance(this.calculateMonthTradeBalance(row));
                                                     row.setMonthTradeSum(row.getMonthTradeSum().add(noNull(report.getAuctionAmount())));
-                                                    row.setTradeIncome(row.getMonthTradeSum().subtract(row.getMonthTradeBalance()));
                                                     row.setCashboxStartMorning(firstReportInMonth.mapTo(Report.class).getCashboxMorning());
                                                     row.setCashboxEndMorning(report.getCashboxEvening());
                                                     row.setMonthLoanRub(row.getMonthLoanRub().add(noNull(report.getLoanedRub())));
@@ -120,7 +117,10 @@ public class StatisticsHandler implements Handler<RoutingContext> {
 
                                                     return row;
                                                 }))
+                                //don`t move this rows upper. They must be executed after all calculations
+                                .map(this::calculateMonthTradeBalance)
                                 .map(this::calculateMonthAverageBasket)
+                                .map(this::calculateTradeIncome)
                                 .map(row -> calculateStartBasket(row, pair.getLeft()))
                                 .reduceWith(pair::getLeft, (yearReport, monthReport) -> {
                                     yearReport.getMonthlyReports().add(monthReport);
@@ -132,6 +132,11 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                         success -> rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8").end(success.encodePrettily()),
                         error -> log.error("", error)
                 );
+    }
+
+    private StatisticsReportForBranchRow calculateTradeIncome(StatisticsReportForBranchRow row) {
+        row.setTradeIncome(row.getMonthTradeSum().subtract(row.getMonthTradeBalance()));
+        return row;
     }
 
     private StatisticsReportForBranchRow calculateStartBasket(StatisticsReportForBranchRow row, StatisticReportForBranch report) {
@@ -167,9 +172,11 @@ public class StatisticsHandler implements Handler<RoutingContext> {
         return row;
     }
 
-    private BigDecimal calculateMonthTradeBalance(StatisticsReportForBranchRow row) {
-        return row.getMonthGoldTradeSum()
-                .add(row.getMonthSilverTradeSum())
-                .add(row.getMonthlyGoodsTradeSum());
+    private StatisticsReportForBranchRow calculateMonthTradeBalance(StatisticsReportForBranchRow row) {
+        row.setMonthTradeBalance(
+                row.getMonthGoldTradeSum()
+                        .add(row.getMonthSilverTradeSum())
+                        .add(row.getMonthlyGoodsTradeSum()));
+        return row;
     }
 }
