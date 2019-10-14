@@ -135,7 +135,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
     }
 
     private StatisticsReportForBranchRow calculateTradeIncome(StatisticsReportForBranchRow row) {
-        row.setTradeIncome(row.getMonthTradeSum().subtract(row.getMonthTradeBalance()));
+        row.setTradeIncome(row.getMonthTradeBalance().subtract(row.getMonthTradeSum()));
         return row;
     }
 
