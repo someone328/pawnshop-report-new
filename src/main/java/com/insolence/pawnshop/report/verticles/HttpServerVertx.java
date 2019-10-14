@@ -64,6 +64,8 @@ public class HttpServerVertx extends AbstractVerticle {
         router.get("/protected/v1/dailyReport/:timestamp").handler(new DailyReportHandler());
         router.get("/protected/v1/totalPercent/:reportId").handler(new TotalPercentHandler());
         router.get("/protected/v1/backup").handler(new BackUpHandler());
+        //TODO не забыть перенести в защищенную область
+        router.get("/test/v1/report/export/excel").handler(new ExcelExportHandler());
 
         router.errorHandler(400, rc -> {
             rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "text/html; charset=utf-8").setStatusCode(400).end(rc.failure().getMessage());
