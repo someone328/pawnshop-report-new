@@ -146,19 +146,15 @@ public class StatisticsHandler implements Handler<RoutingContext> {
     }
 
     private StatisticsReportForBranchRow calculateMonthAverageBasket(StatisticsReportForBranchRow row) {
-        row.setMonthAverageBasket(row.getMonthlyVolumeSum().divide(new BigDecimal(30), 2, RoundingMode.HALF_UP));
+        row.setMonthAverageBasket(row.getMonthlyVolumeSum()
+                .divide(new BigDecimal(30), 2, RoundingMode.HALF_UP)
+        );
         return row;
     }
 
     private BigDecimal calculateMonthTradeBalance(StatisticsReportForBranchRow row) {
-        try {
-            return row.getMonthTradeBalance().
-                    add(row.getMonthGoldTradeSum()
-                            .add(row.getMonthSilverTradeSum())
-                            .add(row.getMonthlyGoodsTradeSum()));
-        } catch (Exception e) {
-            row.errors.put("monthGoldTradeSum", "деление на ноль");
-            return BigDecimal.ZERO;
-        }
+        return row.getMonthGoldTradeSum()
+                .add(row.getMonthSilverTradeSum())
+                .add(row.getMonthlyGoodsTradeSum());
     }
 }
