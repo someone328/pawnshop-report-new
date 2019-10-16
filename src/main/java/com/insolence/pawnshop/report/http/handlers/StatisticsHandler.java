@@ -1,16 +1,17 @@
 package com.insolence.pawnshop.report.http.handlers;
 
 
-import com.insolence.pawnshop.report.domain.Report;
-import com.insolence.pawnshop.report.domain.StatisticReportForBranch;
-import com.insolence.pawnshop.report.domain.StatisticsReportForBranchRow;
+import com.insolence.pawnshop.report.domain.*;
 import com.insolence.pawnshop.report.util.Pair;
+import com.insolence.pawnshop.report.verticles.CalculateDynamicsVerticle;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.FindOptions;
+import io.vertx.reactivex.core.eventbus.EventBus;
 import io.vertx.reactivex.ext.mongo.MongoClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import java.time.ZoneId;
 
 import static com.insolence.pawnshop.report.util.BigDecimalUtils.noNull;
 import static com.insolence.pawnshop.report.util.DateUtils.getCurrentYearStartTimestamp;
+import static com.insolence.pawnshop.report.verticles.CalculateDynamicsVerticle.DYNAMICS_CALCULATIONS;
 
 @Slf4j
 public class StatisticsHandler implements Handler<RoutingContext> {
@@ -71,6 +73,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
             "    {\"$sort\": {\"branchInfo.name\": 1}}\n" +
             "]";
     private static final BigDecimal goldBySilverContentDivision = new BigDecimal(999.9).divide(new BigDecimal(585.0), 4, RoundingMode.HALF_UP);
+    private EventBus bus;
 
     private MongoClient client;
 
@@ -80,6 +83,8 @@ public class StatisticsHandler implements Handler<RoutingContext> {
             client = MongoClient.createShared(rc.vertx(), new JsonObject(), "pawnshop-report");
         }
 
+        bus = rc.vertx().eventBus();
+
         long currentYearStartTimestamp = getCurrentYearStartTimestamp();
         Instant instant = Instant.ofEpochMilli(currentYearStartTimestamp);
         JsonArray pipeline = new JsonArray(String.format(statisticsRequest, currentYearStartTimestamp));
@@ -87,7 +92,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                 .toObservable()
                 .map(json -> {
                     var branchReport = new StatisticReportForBranch();
-                    branchReport.setBranchName(json.getJsonObject("branchInfo").getString("name"));
+                    branchReport.setBranchInfo(json.getJsonObject("branchInfo").mapTo(BranchInfo.class));
                     return Pair.of(branchReport, json.getJsonArray("reportStatIndex"));
                 })
                 .concatMapSingle(pair ->
@@ -105,7 +110,6 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                                     row.setCashboxEndMorning(report.getCashboxEvening());
                                                     row.setMonthLoanRub(row.getMonthLoanRub().add(noNull(report.getLoanedRub())));
                                                     row.setMonthRepayRub(row.getMonthRepayRub().add(noNull(report.getRepayedRub())));
-                                                    row.setEndBasket(noNull(report.getBalancedVolume()));
                                                     row.setMonthExpenses(row.getMonthExpenses().add(noNull(report.getExpensesSum())));
                                                     //
                                                     row.setMonthGoldTradeSum(row.getMonthGoldTradeSum().add(noNull(report.getGoldTradeSum())));
@@ -121,7 +125,8 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                 .map(this::calculateMonthTradeBalance)
                                 .map(this::calculateMonthAverageBasket)
                                 .map(this::calculateTradeIncome)
-                                .map(row -> calculateStartBasket(row, pair.getLeft()))
+                                .flatMapSingle(row -> calculateStartBasket(row, pair.getLeft()))
+                                .flatMapSingle(row -> calculateEndBasket(row, pair.getLeft()))
                                 .reduceWith(pair::getLeft, (yearReport, monthReport) -> {
                                     yearReport.getMonthlyReports().add(monthReport);
                                     return yearReport;
@@ -139,11 +144,16 @@ public class StatisticsHandler implements Handler<RoutingContext> {
         return row;
     }
 
-    private StatisticsReportForBranchRow calculateStartBasket(StatisticsReportForBranchRow row, StatisticReportForBranch report) {
+    private Single<StatisticsReportForBranchRow> calculateStartBasket(StatisticsReportForBranchRow row, StatisticReportForBranch report) {
         long previousMonthLastDay = LocalDate.now().withMonth(row.getMonthNum()).withDayOfMonth(1).minusDays(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
         long currentMonthFirstDay = LocalDate.now().withMonth(row.getMonthNum()).withDayOfMonth(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
+        long nextMonthFirstDay = LocalDate.now().withMonth(row.getMonthNum()).plusMonths(1).withDayOfMonth(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
 
-        if (report.getMonthlyReports().size() == 0) {
+        return bus.<String>rxRequest(DYNAMICS_CALCULATIONS, new JsonObject().put("branchId", report.getBranchInfo().get_id()).put("reportDate", currentMonthFirstDay+""))
+                .map(resp -> new JsonObject(resp.body()).mapTo(ReportCalculations.class))
+        .map(calcs -> {row.setStartBasket(calcs.getVolume()); return row;});
+
+        /*if (report.getMonthlyReports().size() == 0) {
             client.findWithOptions("report",
                     new JsonObject()
                             .put("branch", report.getBranchName())
@@ -161,8 +171,39 @@ public class StatisticsHandler implements Handler<RoutingContext> {
         } else {
             BigDecimal bigDecimal = report.getMonthlyReports().stream().map(r -> r.getLastReport().getBalancedVolume()).reduce((f, s) -> s).orElseGet(() -> BigDecimal.ZERO);
             row.setStartBasket(bigDecimal);
-        }
-        return row;
+        }*/
+        //return row;
+    }
+
+    private Single<StatisticsReportForBranchRow> calculateEndBasket(StatisticsReportForBranchRow row, StatisticReportForBranch report) {
+        long previousMonthLastDay = LocalDate.now().withMonth(row.getMonthNum()).withDayOfMonth(1).minusDays(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
+        long currentMonthFirstDay = LocalDate.now().withMonth(row.getMonthNum()).withDayOfMonth(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
+        long nextMonthFirstDay = LocalDate.now().withMonth(row.getMonthNum()).plusMonths(1).withDayOfMonth(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
+
+        return bus.<String>rxRequest(DYNAMICS_CALCULATIONS, new JsonObject().put("branchId", report.getBranchInfo().get_id()).put("reportDate", nextMonthFirstDay+""))
+                .map(resp -> new JsonObject(resp.body()).mapTo(ReportCalculations.class))
+                .map(calcs -> {row.setEndBasket(calcs.getVolume()); return row;});
+
+        /*if (report.getMonthlyReports().size() == 0) {
+            client.findWithOptions("report",
+                    new JsonObject()
+                            .put("branch", report.getBranchName())
+                            .put("date", new JsonObject()
+                                    .put("$gte", previousMonthLastDay))
+                            .put("date", new JsonObject()
+                                    .put("$lt", currentMonthFirstDay)),
+                    new FindOptions()
+                            .setSort(new JsonObject()
+                                    .put("date", -1))
+                            .setLimit(1), handler -> {
+                        Report report1 = handler.result().stream().map(json -> json.mapTo(Report.class)).findFirst().orElseGet(() -> new Report());
+                        row.setStartBasket(report1.getVolume());
+                    });
+        } else {
+            BigDecimal bigDecimal = report.getMonthlyReports().stream().map(r -> r.getLastReport().getBalancedVolume()).reduce((f, s) -> s).orElseGet(() -> BigDecimal.ZERO);
+            row.setStartBasket(bigDecimal);
+        }*/
+        //return row;
     }
 
     private StatisticsReportForBranchRow calculateMonthAverageBasket(StatisticsReportForBranchRow row) {

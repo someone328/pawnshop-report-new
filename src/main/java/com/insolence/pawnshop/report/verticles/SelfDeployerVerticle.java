@@ -26,7 +26,8 @@ public class SelfDeployerVerticle extends AbstractVerticle {
                     HttpServerVertx.class.getName(),
                     CrudVerticle.class.getName(),
                     LoginVerticle.class.getName(),
-                    TotalPercentReceivedCalculationsVerticle.class.getName());
+                    TotalPercentReceivedCalculationsVerticle.class.getName(),
+                    CalculateDynamicsVerticle.class.getName());
 
     @Override
     public void start() throws Exception {

@@ -6,6 +6,6 @@ import java.util.LinkedList;
 
 @Data
 public class StatisticReportForBranch {
-    private String branchName;
+    private BranchInfo branchInfo;
     private LinkedList<StatisticsReportForBranchRow> monthlyReports = new LinkedList<>();
 }

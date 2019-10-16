@@ -2,6 +2,8 @@ package com.insolence.pawnshop.report.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 
 import java.math.BigDecimal;
 import java.util.HashMap;

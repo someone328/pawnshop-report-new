@@ -1,20 +1,15 @@
 package com.insolence.pawnshop.report.http.handlers;
 
-import com.insolence.pawnshop.report.domain.Report;
-import com.insolence.pawnshop.report.domain.ReportCalculations;
-import io.reactivex.Observable;
-import io.reactivex.Single;
+import com.insolence.pawnshop.report.domain.ValidationError;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.mongo.FindOptions;
-import io.vertx.reactivex.ext.auth.User;
 import io.vertx.reactivex.ext.mongo.MongoClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
-
-import static com.insolence.pawnshop.report.util.BigDecimalUtils.noNull;
 
 public class CreateNewReportHandler implements Handler<RoutingContext> {
     private static final JsonObject EMPTY_JSON = new JsonObject();
@@ -23,75 +18,35 @@ public class CreateNewReportHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext rc) {
-        var bodyAsJson = rc.getBodyAsJson();
-        String branchId = bodyAsJson.getString("branchId");
-        Long reportDate = Long.valueOf(bodyAsJson.getString("reportDate"));
-        User user = rc.user();
-        if (client == null) {
-            client = MongoClient.createShared(rc.vertx(), new JsonObject(), "pawnshop-report");
+        List<ValidationError> errorList = validate(rc);
+        if (errorList.size() > 0) {
+            rc.fail(400, new Exception(errorList.toString()));
+            return;
         }
+        rc.vertx()
+                .eventBus()
+                .<String>rxRequest("dynamics-calculations", rc.getBodyAsJson())
+                .subscribe(success -> {
+                            rc.response()
+                                    .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
+                                    .end(success.body());
 
-        Single<List<JsonObject>> reportsHistory = client.rxFindWithOptions(
-                "report",
-                new JsonObject().put("branch", branchId).put("date", new JsonObject().put("$lt", reportDate)),
-                new FindOptions()
-                        .setSort(new JsonObject().put("date", 1))
-                        .setLimit(500));
-
-        reportsHistory
-                .flatMapObservable(list -> Observable.fromIterable(list))
-                .map(jo -> jo.mapTo(Report.class))
-                .reduceWith(ReportCalculations::new, this::calculateReportInfo)
-                //.map(lastReport -> this.createNewReport(null, lastReport))
-                .subscribe(
-                        x -> rc.response().end(JsonObject.mapFrom(x).encodePrettily()),
-                        error -> error.printStackTrace()
-                );
+                        },
+                        error -> {
+                            rc.fail(500, error);
+                        });
     }
 
-    private ReportCalculations calculateReportInfo(ReportCalculations calculations, Report lastReport) {
-        BigDecimal loanersPawned = noNull(lastReport.getLoanersPawned());
-        BigDecimal loanersBought = noNull(lastReport.getLoanersBought());
-        BigDecimal tradesActive = noNull(lastReport.getTradesActive());
-        calculations.setLoanersAsset(
-                calculations.getLoanersAsset()
-                        .add(loanersPawned)
-                        .subtract(loanersBought)
-                        .subtract(tradesActive));
+    private List<ValidationError> validate(RoutingContext rc) {
+        JsonObject bodyAsJson = rc.getBodyAsJson();
+        List<ValidationError> result = new ArrayList<>();
+        if (!bodyAsJson.containsKey("branchId")) {
+            result.add(new ValidationError("branchId - обязательный параметр"));
+        }
+        if (!bodyAsJson.containsKey("reportDate")) {
+            result.add(new ValidationError("reportDate - обязательный параметр"));
+        }
 
-        calculations.setVolume(
-                calculations.getVolume()
-                        .add(lastReport.getVolume())
-                        .subtract(lastReport.getGoldTradeSum())
-                        .subtract(lastReport.getSilverTradeSum())
-                        .subtract(lastReport.getGoodsTradeSum()));
-
-        calculations.setGoldBalance(
-                calculations.getGoldBalance()
-                        .subtract(noNull(lastReport.getGoldSold()))
-                        .add(noNull(lastReport.getGoldBought()))
-                        .subtract(noNull(lastReport.getGoldTradeWeight())));
-
-        calculations.setSilverBalance(
-                calculations.getSilverBalance()
-                        .subtract(noNull(lastReport.getSilverSold()))
-                        .add(noNull(lastReport.getSilverBought()))
-                        .subtract(noNull(lastReport.getSilverTradeWeight())));
-
-        calculations.setDiamondBalance(
-                calculations.getDiamondBalance()
-                        .subtract(noNull(lastReport.getDiamondSold()))
-                        .add(noNull(lastReport.getDiamondBought()))
-                        .subtract(noNull(lastReport.getDiamondsTradeWeight())));
-
-        calculations.setGoodsBalance(
-                calculations.getGoodsBalance()
-                        .subtract(noNull(lastReport.getGoodsSold()))
-                        .add(noNull(lastReport.getGoodsBought()))
-                        .subtract(noNull(lastReport.getGoodsTradeSum())));
-
-        calculations.setCashboxEvening(noNull(lastReport.getCashboxEvening()));
-
-        return calculations;
+        return result;
     }
 }
