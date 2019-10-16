@@ -3,14 +3,13 @@ package com.insolence.pawnshop.report.http.handlers;
 
 import com.insolence.pawnshop.report.domain.*;
 import com.insolence.pawnshop.report.util.Pair;
-import com.insolence.pawnshop.report.verticles.CalculateDynamicsVerticle;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.SingleSource;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.mongo.FindOptions;
 import io.vertx.reactivex.core.eventbus.EventBus;
 import io.vertx.reactivex.ext.mongo.MongoClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
@@ -101,7 +100,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                 .concatMapSingle(month ->
                                         Observable.fromIterable(month.getJsonArray("reports"))
                                                 .map(x -> ((JsonObject) x).mapTo(Report.class))
-                                                .reduce(new StatisticsReportForBranchRow(), (row, report) -> {
+                                                .reduceWith(StatisticsReportForBranchRow::new, (row, report) -> {
                                                     JsonObject firstReportInMonth = (JsonObject) Observable.fromIterable(month.getJsonArray("reports")).blockingFirst();
                                                     row.setMonthNum(month.getInteger("month"));
                                                     row.setMonthlyVolumeSum(row.getMonthlyVolumeSum().add(noNull(report.getVolume())));
@@ -118,15 +117,15 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                                                     row.setMonthSilverTradeWeight(row.getMonthSilverTradeWeight().add(noNull(report.getSilverTradeWeight())));
                                                     row.setMonthlyGoodsTradeSum(row.getMonthlyGoodsTradeSum().add(noNull(report.getGoodsTradeSum())));
                                                     row.setLastReport(report);
-
                                                     return row;
-                                                }))
+                                                })
+                                )
                                 //don`t move this rows upper. They must be executed after all calculations
                                 .map(this::calculateMonthTradeBalance)
-                                .map(this::calculateMonthAverageBasket)
                                 .map(this::calculateTradeIncome)
-                                .flatMapSingle(row -> calculateStartBasket(row, pair.getLeft()))
-                                .flatMapSingle(row -> calculateEndBasket(row, pair.getLeft()))
+                                .concatMapSingle(row -> calculateStartBasket(row, pair.getLeft()))
+                                .concatMapSingle(row -> calculateEndBasket(row, pair.getLeft()))
+                                .concatMapSingle(row -> calculateMonthAverageBasket(row, pair))
                                 .reduceWith(pair::getLeft, (yearReport, monthReport) -> {
                                     yearReport.getMonthlyReports().add(monthReport);
                                     return yearReport;
@@ -139,79 +138,53 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                 );
     }
 
+    private SingleSource<? extends StatisticsReportForBranchRow> calculateMonthAverageBasket(StatisticsReportForBranchRow row, Pair<StatisticReportForBranch, JsonArray> pair) {
+        Observable<BigDecimal> volumes = Observable.fromIterable(pair.getRight()).flatMap(month -> Observable.fromIterable(((JsonObject) month).getJsonArray("reports")))
+                .map(x -> ((JsonObject) x).mapTo(Report.class))
+                .map(r -> r.getVolume());
+        return volumes.startWith(row.getStartBasket())
+                .scan((f, s) -> f.add(s))
+                .reduceWith(() -> BigDecimal.ZERO, (f, s) -> f.add(s))
+                .map(summ -> {
+                    row.setMonthAverageBasket(summ.divide(new BigDecimal(30), 2, RoundingMode.HALF_UP));
+                    return row;
+                });
+    }
+
     private StatisticsReportForBranchRow calculateTradeIncome(StatisticsReportForBranchRow row) {
         row.setTradeIncome(row.getMonthTradeBalance().subtract(row.getMonthTradeSum()));
         return row;
     }
 
     private Single<StatisticsReportForBranchRow> calculateStartBasket(StatisticsReportForBranchRow row, StatisticReportForBranch report) {
-        long previousMonthLastDay = LocalDate.now().withMonth(row.getMonthNum()).withDayOfMonth(1).minusDays(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
         long currentMonthFirstDay = LocalDate.now().withMonth(row.getMonthNum()).withDayOfMonth(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
-        long nextMonthFirstDay = LocalDate.now().withMonth(row.getMonthNum()).plusMonths(1).withDayOfMonth(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
-
-        return bus.<String>rxRequest(DYNAMICS_CALCULATIONS, new JsonObject().put("branchId", report.getBranchInfo().get_id()).put("reportDate", currentMonthFirstDay+""))
-                .map(resp -> new JsonObject(resp.body()).mapTo(ReportCalculations.class))
-        .map(calcs -> {row.setStartBasket(calcs.getVolume()); return row;});
-
-        /*if (report.getMonthlyReports().size() == 0) {
-            client.findWithOptions("report",
-                    new JsonObject()
-                            .put("branch", report.getBranchName())
-                            .put("date", new JsonObject()
-                                    .put("$gte", previousMonthLastDay))
-                            .put("date", new JsonObject()
-                                    .put("$lt", currentMonthFirstDay)),
-                    new FindOptions()
-                            .setSort(new JsonObject()
-                                    .put("date", -1))
-                            .setLimit(1), handler -> {
-                        Report report1 = handler.result().stream().map(json -> json.mapTo(Report.class)).findFirst().orElseGet(() -> new Report());
-                        row.setStartBasket(report1.getVolume());
-                    });
-        } else {
-            BigDecimal bigDecimal = report.getMonthlyReports().stream().map(r -> r.getLastReport().getBalancedVolume()).reduce((f, s) -> s).orElseGet(() -> BigDecimal.ZERO);
-            row.setStartBasket(bigDecimal);
-        }*/
-        //return row;
+        return requestCalculationsFor(report, currentMonthFirstDay)
+                .map(calcs -> {
+                    row.setStartBasket(calcs.getVolume());
+                    return row;
+                });
     }
 
     private Single<StatisticsReportForBranchRow> calculateEndBasket(StatisticsReportForBranchRow row, StatisticReportForBranch report) {
-        long previousMonthLastDay = LocalDate.now().withMonth(row.getMonthNum()).withDayOfMonth(1).minusDays(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
-        long currentMonthFirstDay = LocalDate.now().withMonth(row.getMonthNum()).withDayOfMonth(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
         long nextMonthFirstDay = LocalDate.now().withMonth(row.getMonthNum()).plusMonths(1).withDayOfMonth(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
-
-        return bus.<String>rxRequest(DYNAMICS_CALCULATIONS, new JsonObject().put("branchId", report.getBranchInfo().get_id()).put("reportDate", nextMonthFirstDay+""))
-                .map(resp -> new JsonObject(resp.body()).mapTo(ReportCalculations.class))
-                .map(calcs -> {row.setEndBasket(calcs.getVolume()); return row;});
-
-        /*if (report.getMonthlyReports().size() == 0) {
-            client.findWithOptions("report",
-                    new JsonObject()
-                            .put("branch", report.getBranchName())
-                            .put("date", new JsonObject()
-                                    .put("$gte", previousMonthLastDay))
-                            .put("date", new JsonObject()
-                                    .put("$lt", currentMonthFirstDay)),
-                    new FindOptions()
-                            .setSort(new JsonObject()
-                                    .put("date", -1))
-                            .setLimit(1), handler -> {
-                        Report report1 = handler.result().stream().map(json -> json.mapTo(Report.class)).findFirst().orElseGet(() -> new Report());
-                        row.setStartBasket(report1.getVolume());
-                    });
-        } else {
-            BigDecimal bigDecimal = report.getMonthlyReports().stream().map(r -> r.getLastReport().getBalancedVolume()).reduce((f, s) -> s).orElseGet(() -> BigDecimal.ZERO);
-            row.setStartBasket(bigDecimal);
-        }*/
-        //return row;
+        return requestCalculationsFor(report, nextMonthFirstDay)
+                .map(calcs -> {
+                    row.setEndBasket(calcs.getVolume());
+                    return row;
+                });
     }
 
-    private StatisticsReportForBranchRow calculateMonthAverageBasket(StatisticsReportForBranchRow row) {
+    private Single<ReportCalculations> requestCalculationsFor(StatisticReportForBranch report, long nextMonthFirstDay) {
+        return bus.<String>rxRequest(DYNAMICS_CALCULATIONS, new JsonObject().put("branchId", report.getBranchInfo().get_id()).put("reportDate", nextMonthFirstDay + ""))
+                .map(resp -> new JsonObject(resp.body()).mapTo(ReportCalculations.class));
+    }
+
+    /*private StatisticsReportForBranchRow calculateMonthAverageBasket(StatisticsReportForBranchRow row) {
         row.setMonthAverageBasket(row.getMonthlyVolumeSum()
                 .divide(new BigDecimal(30), 2, RoundingMode.HALF_UP)
         );
         return row;
-    }
+    }*/
 
     private StatisticsReportForBranchRow calculateMonthTradeBalance(StatisticsReportForBranchRow row) {
         row.setMonthTradeBalance(
