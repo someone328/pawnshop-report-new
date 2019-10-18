@@ -139,7 +139,9 @@ public class StatisticsHandler implements Handler<RoutingContext> {
     }
 
     private SingleSource<? extends StatisticsReportForBranchRow> calculateMonthAverageBasket(StatisticsReportForBranchRow row, Pair<StatisticReportForBranch, JsonArray> pair) {
-        Observable<BigDecimal> volumes = Observable.fromIterable(pair.getRight()).flatMap(month -> Observable.fromIterable(((JsonObject) month).getJsonArray("reports")))
+        Observable<BigDecimal> volumes = Observable.fromIterable(pair.getRight())
+                .filter(month -> ((JsonObject) month).getInteger("month") == row.getMonthNum())
+                .concatMap(month -> Observable.fromIterable(((JsonObject) month).getJsonArray("reports")))
                 .map(x -> ((JsonObject) x).mapTo(Report.class))
                 .map(r -> r.getVolume());
         return volumes.startWith(row.getStartBasket())
