@@ -149,7 +149,11 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                 .scan((f, s) -> f.add(s))
                 .reduceWith(() -> BigDecimal.ZERO, (f, s) -> f.add(s))
                 .map(summ -> {
-                    row.setMonthAverageBasket(summ.divide(new BigDecimal(30), 2, RoundingMode.HALF_UP));
+                    row.setMonthAverageBasket(summ.subtract(
+                            noNull(row.getStartBasket().add(row.getLastReport().getGoodsTradeSum())
+                                    .add(noNull(row.getLastReport().getSilverTradeSum())
+                                            .add(noNull(row.getLastReport().getGoldTradeSum())))))
+                            .divide(new BigDecimal(30), 2, RoundingMode.HALF_UP));
                     return row;
                 });
     }
