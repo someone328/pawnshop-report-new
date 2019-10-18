@@ -144,15 +144,12 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                 .concatMap(month -> Observable.fromIterable(((JsonObject) month).getJsonArray("reports")))
                 .map(x -> ((JsonObject) x).mapTo(Report.class))
                 .filter(report -> report.getBranch().equals(pair.getLeft().getBranchInfo().get_id()))
-                .map(r -> r.getVolume());
+                .map(Report::getBalancedVolume);
         return volumes.startWith(row.getStartBasket())
-                .scan((f, s) -> f.add(s))
-                .reduceWith(() -> BigDecimal.ZERO, (f, s) -> f.add(s))
+                .scan(BigDecimal::add)
+                .reduceWith(() -> BigDecimal.ZERO, BigDecimal::add)
                 .map(summ -> {
-                    row.setMonthAverageBasket(summ.subtract(
-                            noNull(row.getStartBasket().add(row.getLastReport().getGoodsTradeSum())
-                                    .add(noNull(row.getLastReport().getSilverTradeSum())
-                                            .add(noNull(row.getLastReport().getGoldTradeSum())))))
+                    row.setMonthAverageBasket(summ.subtract(row.getStartBasket())
                             .divide(new BigDecimal(30), 2, RoundingMode.HALF_UP));
                     return row;
                 });
