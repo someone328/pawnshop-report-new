@@ -143,6 +143,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                 .filter(month -> ((JsonObject) month).getInteger("month") == row.getMonthNum())
                 .concatMap(month -> Observable.fromIterable(((JsonObject) month).getJsonArray("reports")))
                 .map(x -> ((JsonObject) x).mapTo(Report.class))
+                .filter(report -> report.getBranch().equals(pair.getLeft().getBranchInfo().get_id()))
                 .map(r -> r.getVolume());
         return volumes.startWith(row.getStartBasket())
                 .scan((f, s) -> f.add(s))
