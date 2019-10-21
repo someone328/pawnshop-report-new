@@ -6,6 +6,14 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 public class DateUtils {
+    public static long getFirstMomentOfYear(int year) {
+        return LocalDate.ofYearDay(year, 1).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
+    }
+
+    public static long getLastMomentOfYear(int year) {
+        return LocalDate.ofYearDay(year + 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli() - 1;
+    }
+
     public static long getCurrentYearStartTimestamp() {
         return LocalDate.now().withDayOfYear(1).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
     }

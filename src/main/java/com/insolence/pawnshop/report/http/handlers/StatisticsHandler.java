@@ -22,14 +22,15 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 
 import static com.insolence.pawnshop.report.util.BigDecimalUtils.noNull;
-import static com.insolence.pawnshop.report.util.DateUtils.getCurrentYearStartTimestamp;
+import static com.insolence.pawnshop.report.util.DateUtils.*;
 import static com.insolence.pawnshop.report.verticles.CalculateDynamicsVerticle.DYNAMICS_CALCULATIONS;
 
 @Slf4j
 public class StatisticsHandler implements Handler<RoutingContext> {
-    private static final String statisticsRequest = "[{\"$match\": {\"branch\": {\"$ne\": null},\"date\": {\"$gte\": %s}}},\n" +
-            "{\n" +
-            "    \"$lookup\":{\n" +
+    private static final String statisticsRequest = "[\n" +
+            "{\"$match\": {\"branch\": {\"$ne\": null},\"date\": {\"$gte\": %s}}},\n" +
+            "{\"$match\": {\"branch\": {\"$ne\": null},\"date\": {\"$lte\": %s}}},\n" +
+            "{\"$lookup\":{\n" +
             "        \"from\":\"report\",\n" +
             "        \"let\":{\"report_branch\":\"$branch\", \"report_date\":\"$date\"},\n" +
             "        \"pipeline\":[\n" +
@@ -81,12 +82,15 @@ public class StatisticsHandler implements Handler<RoutingContext> {
         if (client == null) {
             client = MongoClient.createShared(rc.vertx(), new JsonObject(), "pawnshop-report");
         }
-
+        int year = Integer.valueOf(rc.request().getParam("year"));
+        System.out.println(year);
         bus = rc.vertx().eventBus();
 
-        long currentYearStartTimestamp = getCurrentYearStartTimestamp();
-        Instant instant = Instant.ofEpochMilli(currentYearStartTimestamp);
-        JsonArray pipeline = new JsonArray(String.format(statisticsRequest, currentYearStartTimestamp));
+        long startOfYear = getFirstMomentOfYear(year);
+        long endOfYear = getLastMomentOfYear(year);
+        System.out.println(startOfYear);
+        System.out.println(endOfYear);
+        JsonArray pipeline = new JsonArray(String.format(statisticsRequest, startOfYear, endOfYear));
         client.aggregate(CrudHandler.SupportedObjectTypes.REPORT.name().toLowerCase(), pipeline)
                 .toObservable()
                 .map(json -> {
