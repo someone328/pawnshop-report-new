@@ -18,8 +18,21 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext rc) {
         HSSFWorkbook xls = new HSSFWorkbook();
+        JsonObject requestBody = rc.getBodyAsJson();
+        String branchId = requestBody.getString("branchId");
+        Long dateFrom = requestBody.getLong("dateFrom");
+        Long dateTo = requestBody.getLong("dateTo");
+        System.out.println("branchID:" + branchId);
+        System.out.println("dateFrom:" + dateFrom);
+        System.out.println("dateTo:" + dateTo);
 
-        rc.vertx().eventBus().rxRequest("crud.get", new JsonObject(), new DeliveryOptions().addHeader("objectType", CrudHandler.SupportedObjectTypes.BRANCH.name().toLowerCase()))
+        rc.vertx().eventBus()
+                .rxRequest(
+                        "crud.get",
+                        new JsonObject().put("_id", branchId),
+                        new DeliveryOptions().addHeader("objectType", CrudHandler.SupportedObjectTypes.BRANCH.name().toLowerCase())
+
+                )
                 .map(Message::body)
                 .flatMapObservable(branchList -> Observable.fromIterable((JsonArray) branchList))
                 .doOnEach(e -> System.out.println(e))
