@@ -14,12 +14,14 @@ import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 
+import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ExcelExportHandler implements Handler<RoutingContext> {
@@ -67,18 +69,18 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "        \"silverBought\":\"$silverBought\",\n" +
             "        \"silverSold\":\"$silverSold\",\n" +
             "        \"diamondsBalance\":\"TODO\",\n" +
-            "        \"diamondsBought\":\"$diamondsBought\",\n" +
-            "        \"diamondsSold\":\"$diamondsSold\",\n" +
+            "        \"diamondsBought\":\"$diamondBought\",\n" +
+            "        \"diamondsSold\":\"$diamondSold\",\n" +
             "        \"goodsBalance\":\"TODO\",\n" +
             "        \"goodsBought\":\"$goodsBought\",\n" +
             "        \"goodsSold\":\"$goodsSold\",\n" +
-            "        \"tradeActive\":\"$tradeActive\",\n" +
+            "        \"tradesActive\":\"$tradesActive\",\n" +
             "        \"silverTradeWeight\":\"$silverTradeWeight\",\n" +
             "        \"goldTradeWeight\":\"$goldTradeWeight\",\n" +
             "        \"metalTradeSum\":{\"$add\":[{\"$toDouble\":\"$goldTradeSum\"},{\"$toDouble\":\"$silverTradeSum\"}]},    \n" +
             "        \"goodsTradeSum\":\"$goodsTradeSum\",\n" +
             "        \"auctionAmount\":\"$auctionAmount\",\n" +
-            "        \"expences\":\"$expences\"\n" +
+            "        \"expenses\":\"$expenses\"\n" +
             "        }}\n" +
             "    }},\n" +
             "    {\"$unwind\":{\"path\":\"$report\", \"includeArrayIndex\":\"rownum\"}},\n" +
@@ -95,18 +97,14 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
         System.out.println("branchID:" + branchId);
         System.out.println("dateFrom:" + dateFrom);
         System.out.println("dateTo:" + dateTo);
+        populateCellStyles(xls);
 
         if (client == null) {
             client = MongoClient.createShared(rc.vertx(), new JsonObject(), "pawnshop-report");
         }
         xls.createSheet(branchId);
         xls.setActiveSheet(0);
-        HSSFSheet sheet = xls.getSheet(branchId);
         createHeader(xls, branchId);
-
-        for (int i = 0; i < 34; i++) {
-            cellStyles.add(getDataStyle(xls, i));
-        }
 
         JsonArray pipeline = new JsonArray(String.format(query, branchId, dateFrom, dateTo, "%d/%m/%Y"));
         AggregateOptions aggregateOptions = new AggregateOptions();
@@ -120,45 +118,39 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
                             xlsRow.createCell(0).setCellValue(String.valueOf(success.getJsonObject("report").getValue("date")));
                             xlsRow.createCell(1).setCellValue(String.valueOf(success.getJsonObject("report").getValue("username")));
                             xlsRow.createCell(2).setCellValue(String.valueOf(success.getJsonObject("report").getValue("loanersAsset")));
-                            xlsRow.createCell(3).setCellValue(String.valueOf(success.getJsonObject("report").getValue("loanersPawned")));
-                            xlsRow.createCell(4).setCellValue(String.valueOf(success.getJsonObject("report").getValue("loanersBought")));
+                            xlsRow.createCell(3).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanersPawned").toString()).longValue());
+                            xlsRow.createCell(4).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanersBought").toString()).longValue());
                             xlsRow.createCell(5).setCellValue(String.valueOf(success.getJsonObject("report").getValue("pawnersRate")));
-                            xlsRow.createCell(6).setCellValue(String.valueOf(success.getJsonObject("report").getValue("pawnersRatePercentage")));
+                            xlsRow.createCell(6).setCellValue(String.valueOf(success.getJsonObject("report").getValue("pawnersRatePercent")));
                             xlsRow.createCell(7).setCellValue(String.valueOf(success.getJsonObject("report").getValue("cashboxMorning")));
                             xlsRow.createCell(8).setCellValue(String.valueOf(success.getJsonObject("report").getValue("volume")));
-                            xlsRow.createCell(9).setCellValue(String.valueOf(success.getJsonObject("report").getValue("loanedRub")));
-                            xlsRow.createCell(10).setCellValue(String.valueOf(success.getJsonObject("report").getValue("repayedRub")));
+                            xlsRow.createCell(9).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanedRub").toString()).longValue());
+                            xlsRow.createCell(10).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("repayedRub").toString()).longValue());
                             xlsRow.createCell(11).setCellValue(String.valueOf(success.getJsonObject("report").getValue("totalPercentRecieved")));
                             xlsRow.createCell(12).setCellValue(String.valueOf(success.getJsonObject("report").getValue("percentRecieved")));
                             xlsRow.createCell(13).setCellValue(String.valueOf(success.getJsonObject("report").getValue("dailyGrowth")));
                             xlsRow.createCell(14).setCellValue(String.valueOf(success.getJsonObject("report").getValue("dailyGrowthPercent")));
                             xlsRow.createCell(15).setCellValue(String.valueOf(success.getJsonObject("report").getValue("goldBalance")));
-                            xlsRow.createCell(16).setCellValue(String.valueOf(success.getJsonObject("report").getValue("goldBought")));
-                            xlsRow.createCell(17).setCellValue(String.valueOf(success.getJsonObject("report").getValue("goldSold")));
+                            xlsRow.createCell(16).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goldBought").toString()));
+                            xlsRow.createCell(17).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goldSold").toString()));
                             xlsRow.createCell(18).setCellValue(String.valueOf(success.getJsonObject("report").getValue("silverBalance")));
-                            xlsRow.createCell(19).setCellValue(String.valueOf(success.getJsonObject("report").getValue("silverBought")));
-                            xlsRow.createCell(20).setCellValue(String.valueOf(success.getJsonObject("report").getValue("silverSold")));
-                            xlsRow.createCell(21).setCellValue(String.valueOf(success.getJsonObject("report").getValue("diamondBalance")));
-                            xlsRow.createCell(22).setCellValue(String.valueOf(success.getJsonObject("report").getValue("diamondBought")));
-                            xlsRow.createCell(23).setCellValue(String.valueOf(success.getJsonObject("report").getValue("diamondSold")));
+                            xlsRow.createCell(19).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("silverBought").toString()));
+                            xlsRow.createCell(20).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("silverSold").toString()));
+                            xlsRow.createCell(21).setCellValue(String.valueOf(success.getJsonObject("report").getValue("diamondsBalance")));
+                            xlsRow.createCell(22).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("diamondsBought").toString()));
+                            xlsRow.createCell(23).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("diamondsSold").toString()));
                             xlsRow.createCell(24).setCellValue(String.valueOf(success.getJsonObject("report").getValue("goodsBalance")));
-                            xlsRow.createCell(25).setCellValue(String.valueOf(success.getJsonObject("report").getValue("goodsBought")));
-                            xlsRow.createCell(26).setCellValue(String.valueOf(success.getJsonObject("report").getValue("goodsSold")));
-                            xlsRow.createCell(27).setCellValue(String.valueOf(success.getJsonObject("report").getValue("tradesActive")));
-                            xlsRow.createCell(28).setCellValue(String.valueOf(success.getJsonObject("report").getValue("silverTradeWeight")));
-                            xlsRow.createCell(29).setCellValue(String.valueOf(success.getJsonObject("report").getValue("goldTradeWeight")));
-                            xlsRow.createCell(30).setCellValue(String.valueOf(success.getJsonObject("report").getValue("metalTradeSum")));
-                            xlsRow.createCell(31).setCellValue(String.valueOf(success.getJsonObject("report").getValue("goodsTradeSum")));
-                            xlsRow.createCell(32).setCellValue(String.valueOf(success.getJsonObject("report").getValue("auctionAmount")));
-                            xlsRow.createCell(33).setCellValue(String.valueOf(success.getJsonObject("report").getValue("expences")));
+                            xlsRow.createCell(25).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goodsBought").toString()));
+                            xlsRow.createCell(26).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goodsSold").toString()));
+                            xlsRow.createCell(27).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("tradesActive").toString()).longValue());
+                            xlsRow.createCell(28).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("silverTradeWeight").toString()));
+                            xlsRow.createCell(29).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goldTradeWeight").toString()));
+                            xlsRow.createCell(30).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("metalTradeSum").toString()).longValue());
+                            xlsRow.createCell(31).setCellValue(Long.valueOf(success.getJsonObject("report").getValue("goodsTradeSum").toString()));
+                            xlsRow.createCell(32).setCellValue(Long.valueOf(success.getJsonObject("report").getValue("auctionAmount").toString()));
+                            xlsRow.createCell(33).setCellValue(calculateExpences(success.getJsonObject("report").getValue("expenses")));
                             for (int i = 0; i < 34; i++) {
-                                try {
-                                    if (cellStyles.get(i) != null) {
-                                        xlsRow.getCell(i).setCellStyle(cellStyles.get(i));
-                                    }
-                                } catch (Exception ex) {
-                                    System.out.println(ex.getMessage());
-                                }
+                                xlsRow.getCell(i).setCellStyle(getDataStyle(i));
                             }
                         },
                         error -> {
@@ -176,85 +168,94 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
                 );
     }
 
-    private HSSFCellStyle getDataStyle(HSSFWorkbook xls, int columnIndex) {
-        short colorIndex = getColor(columnIndex);
-        if (colorIndex == 64) {
+    private Long calculateExpences(Object value) {
+        if (value == null) {
+            return 0L;
+        }
+        try {
+            JsonArray expenses = (JsonArray) value;
+            return expenses.stream()
+                    .map(j -> {
+                        JsonObject e = (JsonObject) j;
+                        if (e != null && e.containsKey("sum")) {
+                            return Double.valueOf(e.getValue("sum").toString()).longValue();
+                        }
+                        return 0L;
+                    })
+                    .reduce(0L, Long::sum);
+        } catch (Exception ex) {
             return null;
         }
-        HSSFCellStyle cellStyle = xls.createCellStyle();
-        cellStyle.setFillForegroundColor(colorIndex);
-        cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        cellStyle.setBorderTop(BorderStyle.THIN);
-        cellStyle.setBorderBottom(BorderStyle.THIN);
-        cellStyle.setBorderLeft(BorderStyle.THIN);
-        cellStyle.setBorderRight(BorderStyle.THIN);
-        cellStyle.setBottomBorderColor(IndexedColors.BLACK.getIndex());
-        cellStyle.setTopBorderColor(IndexedColors.BLACK.getIndex());
-        cellStyle.setLeftBorderColor(IndexedColors.BLACK.getIndex());
-        cellStyle.setRightBorderColor(IndexedColors.BLACK.getIndex());
-        return cellStyle;
     }
 
-    private short getColor(int column) {
-        short colors[] = {64, 64, 62, 13, 51, 64, 64, 64, 62, 13, 51, 64, 13, 62, 64, 64, 13, 51, 64, 13, 51, 64, 13, 51, 64, 13, 51, 64, 55, 13, 64, 64, 64, 64};
-        if (column > 0 && column < colors.length) {
-            return colors[column];
-        }
-        return 64;
+    private void populateCellStyles(HSSFWorkbook xls) {
+        cellStyles.add(createCellStyle(xls, (short) 14, true, HorizontalAlignment.CENTER, (short) 0));      //0
+        cellStyles.add(createCellStyle(xls, (short) 12, true, HorizontalAlignment.CENTER, (short) 0));      //1
+
+        cellStyles.add(createCellStyle(xls, (short) 10, true, HorizontalAlignment.CENTER, (short) 0));      //2
+        cellStyles.add(createCellStyle(xls, (short) 10, true, HorizontalAlignment.CENTER, (short) 48));     //3
+        cellStyles.add(createCellStyle(xls, (short) 10, true, HorizontalAlignment.CENTER, (short) 13));     //4
+        cellStyles.add(createCellStyle(xls, (short) 10, true, HorizontalAlignment.CENTER, (short) 51));     //5
+        cellStyles.add(createCellStyle(xls, (short) 10, true, HorizontalAlignment.GENERAL, (short) 55));    //6
+
+        cellStyles.add(createCellStyle(xls, (short) 10, false, HorizontalAlignment.GENERAL, (short) 0));    //7
+        cellStyles.add(createCellStyle(xls, (short) 10, false, HorizontalAlignment.GENERAL, (short) 48));   //8
+        cellStyles.add(createCellStyle(xls, (short) 10, false, HorizontalAlignment.GENERAL, (short) 13));   //9
+        cellStyles.add(createCellStyle(xls, (short) 10, false, HorizontalAlignment.GENERAL, (short) 51));   //10
+        cellStyles.add(createCellStyle(xls, (short) 10, false, HorizontalAlignment.GENERAL, (short) 55));   //11
+        cellStyles.add(createCellStyle(xls, (short) 14, true, HorizontalAlignment.CENTER, (short) 0));      //12
+        cellStyles.get(12).setWrapText(true);
+        cellStyles.add(createCellStyle(xls, (short) 10, true, HorizontalAlignment.CENTER, (short) 0));      //13
+        cellStyles.get(13).setWrapText(true);
     }
 
-    private HSSFCellStyle getStyle(int fontSize, HSSFWorkbook xls, boolean isBold) {
+    private HSSFCellStyle createCellStyle(HSSFWorkbook xls, short fontSize, boolean isBold, HorizontalAlignment horizontalAlignment, short foregroundColorIndex) {
         HSSFFont font = xls.createFont();
-        font.setFontHeightInPoints((short) fontSize);
+        font.setFontHeightInPoints(fontSize);
         font.setBold(isBold);
 
         HSSFCellStyle cellStyle = xls.createCellStyle();
         cellStyle.setFont(font);
-        cellStyle.setAlignment(HorizontalAlignment.CENTER);
+        cellStyle.setAlignment(horizontalAlignment);
         cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        cellStyle.setBorderTop(BorderStyle.THIN);
-        cellStyle.setBorderBottom(BorderStyle.THIN);
-        cellStyle.setBorderLeft(BorderStyle.THIN);
-        cellStyle.setBorderRight(BorderStyle.THIN);
-        cellStyle.setBottomBorderColor(IndexedColors.BLACK.getIndex());
-        cellStyle.setTopBorderColor(IndexedColors.BLACK.getIndex());
-        cellStyle.setLeftBorderColor(IndexedColors.BLACK.getIndex());
-        cellStyle.setRightBorderColor(IndexedColors.BLACK.getIndex());
-        return cellStyle;
+        if (foregroundColorIndex != 0) {
+            cellStyle.setFillForegroundColor(foregroundColorIndex);
+            cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        }
+        return setBorders(cellStyle);
+    }
+
+    private HSSFCellStyle setBorders(HSSFCellStyle style) {
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setBottomBorderColor(IndexedColors.BLACK.getIndex());
+        style.setTopBorderColor(IndexedColors.BLACK.getIndex());
+        style.setLeftBorderColor(IndexedColors.BLACK.getIndex());
+        style.setRightBorderColor(IndexedColors.BLACK.getIndex());
+        return style;
+    }
+
+    private HSSFCellStyle getDataStyle(int columnIndex) {
+        short colors[] = {7, 7, 8, 9, 10, 7, 7, 7, 8, 9, 10, 7, 9, 8, 7, 7, 9, 10, 7, 9, 10, 7, 9, 10, 7, 9, 10, 7, 11, 9, 7, 7, 7, 7};
+        return cellStyles.get(colors[columnIndex]);
     }
 
     private void createHeader(HSSFWorkbook xls, String branchName) {
-        // first row
-        HSSFCellStyle style14 = getStyle(14, xls, true);
-        HSSFCellStyle style12 = getStyle(12, xls, true);
-        HSSFCellStyle style10 = getStyle(10, xls, true);
-
+        int[][] styles = {
+                {0, 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 12},
+                {0, 0, 3, 4, 5, 2, 2, 13, 3, 4, 5, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 12, 12},
+                {0, 0, 3, 4, 5, 2, 2, 13, 3, 4, 5, 2, 2, 2, 2, 2, 4, 5, 2, 4, 5, 2, 4, 5, 2, 4, 5, 1, 1, 1, 2, 0, 12, 12},
+                {0, 0, 3, 4, 5, 2, 2, 13, 3, 4, 5, 2, 4, 3, 2, 2, 4, 5, 2, 4, 5, 2, 4, 5, 2, 4, 5, 2, 6, 4, 2, 2, 12, 12}
+        };
         HSSFRow row;
-        row = xls.getSheet(branchName).createRow(0);
-        for (int j = 0; j < 34; j++) {
-            row.createCell(j).setCellStyle(style14);
-        }
-        style14.setWrapText(true);
-        row.getCell(32).setCellStyle(style14);
-        row.getCell(33).setCellStyle(style14);
-
-        HSSFCellStyle style10W = style10;
-        style10W.setWrapText(true);
-        row.getCell(7).setCellStyle(style10W);
-        for (int i = 1; i < 4; i++) {
+        for (int i = 0; i < styles.length; i++) {
             row = xls.getSheet(branchName).createRow(i);
-            for (int j = 0; j < 34; j++) {
-                row.createCell(j).setCellStyle(style10);
+            for (int j = 0; j < styles[i].length; j++) {
+                row.createCell(j).setCellStyle(cellStyles.get(styles[i][j]));
             }
         }
-        row = xls.getSheet(branchName).getRow(1);
-        for (int j = 15; j <= 26; j++) {
-            row.getCell(j).setCellStyle(style12);
-        }
-        row = xls.getSheet(branchName).getRow(2);
-        row.getCell(27).setCellStyle(style12);
-        row.getCell(28).setCellStyle(style12);
-
 
         row = xls.getSheet(branchName).getRow(0);
         row.getCell(0).setCellValue("Дата");
