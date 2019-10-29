@@ -48,35 +48,26 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "        \"date\":{\"$toDate\":\"$date\"},\n" +
             "        \"format\":\"%s\"}},\n" +
             "    \"username\":\"$username.name\",\n" +
-            "    \"loanersAsset\":\"TODO\",\n" +
             "    \"loanersPawned\":\"$loanersPawned\",\n" +
             "    \"loanersBought\":\"$loanersBought\",\n" +
             "    \"pawnersRate\":{\"$subtract\":[{\"$toDouble\":\"$loanersPawned\"},{\"$toDouble\":\"$loanersBought\"}]},\n" +
-            "    \"pawnersRatePercent\":\"TODO\",\n" +
-            "    \"cashboxEvening\":\"$cashboxEvening\",        \n" +
-            "    \"volume\":\"TODO\",\n" +
+            "    \"cashboxEvening\":\"$cashboxEvening\",\n" +
             "    \"loanedRub\":\"$loanedRub\",\n" +
             "    \"repayedRub\":\"$repayedRub\",\n" +
-            "    \"totalPercentRecieved\":\"TODO\",\n" +
-            "    \"percentRecieved\":\"TODO\",\n" +
+            "    \"percentRecieved\":\"$percentRecieved\",\n" +
             "    \"dailyGrowth\":{\"$subtract\":[{\"$toDouble\":\"$loanedRub\"},{\"$toDouble\":\"$repayedRub\"}]},\n" +
-            "    \"dailyGrowthPercent\":\"TODO\",\n" +
-            "    \"goldBalance\":\"TODO\",\n" +
             "    \"goldBought\":\"$goldBought\",\n" +
             "    \"goldSold\":\"$goldSold\",\n" +
-            "    \"silverBalance\":\"TODO\",\n" +
             "    \"silverBought\":\"$silverBought\",\n" +
             "    \"silverSold\":\"$silverSold\",\n" +
-            "    \"diamondsBalance\":\"TODO\",\n" +
             "    \"diamondsBought\":\"$diamondBought\",\n" +
             "    \"diamondsSold\":\"$diamondSold\",\n" +
-            "    \"goodsBalance\":\"TODO\",\n" +
             "    \"goodsBought\":\"$goodsBought\",\n" +
             "    \"goodsSold\":\"$goodsSold\",\n" +
             "    \"tradesActive\":\"$tradesActive\",\n" +
             "    \"silverTradeWeight\":\"$silverTradeWeight\",\n" +
             "    \"goldTradeWeight\":\"$goldTradeWeight\",\n" +
-            "    \"metalTradeSum\":{\"$add\":[{\"$toDouble\":\"$goldTradeSum\"},{\"$toDouble\":\"$silverTradeSum\"}]},    \n" +
+            "    \"metalTradeSum\":{\"$add\":[{\"$toDouble\":\"$goldTradeSum\"},{\"$toDouble\":\"$silverTradeSum\"}]},\n" +
             "    \"goodsTradeSum\":\"$goodsTradeSum\",\n" +
             "    \"auctionAmount\":\"$auctionAmount\",\n" +
             "    \"expenses\":\"$expenses\"\n" +
@@ -112,6 +103,36 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "        ],\n" +
             "        \"as\":\"report.loanersAsset\"}},\n" +
             "{\"$unwind\":\"$report.loanersAsset\"},\n" +
+            "{\"$lookup\":{\"from\":\"report\",\n" +
+            "    \"let\":{\"report_branch\":\"$report.branch\", \"report_date\":\"$report.utc\"},\n" +
+            "    \"pipeline\":[\n" +
+            "    {\"$match\":{\"$expr\":{\"$and\":[{\"$eq\":[\"$branch\",\"$$report_branch\"]},{\"$lte\":[\"$date\",\"$$report_date\"]}]}}},\n" +
+            "    {\"$group\":{\n" +
+            "        \"_id\":\"branch\",\n" +
+            "        \"goldBalance\":{\"$sum\":{\n" +
+            "            \"$subtract\":[\n" +
+            "                {\"$subtract\":[{\"$toDouble\":\"$goldBought\"}, {\"$toDouble\":\"$goldSold\"}]},\n" +
+            "                {\"$toDouble\":\"$goldTradeWeight\"}]}},\n" +
+            "        \"silverBalance\":{\"$sum\":{\n" +
+            "            \"$subtract\":[\n" +
+            "                {\"$subtract\":[{\"$toDouble\":\"$silverBought\"}, {\"$toDouble\":\"$silverSold\"}]},\n" +
+            "                {\"$toDouble\":\"$silverTradeWeight\"}]}},\n" +
+            "        \"diamondsBalance\":{\"$sum\":{\"$subtract\":[{\"$toDouble\":\"$diamondBought\"}, {\"$toDouble\":\"$diamondSold\"}]}},\n" +
+            "        \"goodsBalance\":{\"$sum\":{\n" +
+            "            \"$subtract\":[\n" +
+            "                {\"$subtract\":[{\"$toDouble\":\"$goodsBought\"}, {\"$toDouble\":\"$goodsSold\"}]},\n" +
+            "                {\"$toDouble\":\"$goodsTradeSum\"}]}},\n" +
+            "        \"volume\":{\"$sum\":{\n" +
+            "            \"$subtract\":[\n" +
+            "                {\"$subtract\":[{\"$toDouble\":{\"$subtract\":[{\"$toDouble\":\"$loanedRub\"},{\"$toDouble\":\"$repayedRub\"}]}}, {\"$toDouble\":\"$goodsTradeSum\"}]},\n" +
+            "                {\"$toDouble\":{\"$add\":[{\"$toDouble\":\"$goldTradeSum\"},{\"$toDouble\":\"$silverTradeSum\"}]}}]}},\n" +
+            "        \"totalPercentRecieved\":{\"$sum\":{\"$toDouble\":\"$percentRecieved\"}}\n" +
+            "        }\n" +
+            "    },\n" +
+            "    {\"$project\":{\"_id\":0, \"goldBalance\":1, \"silverBalance\":1, \"diamondsBalance\":1, \"goodsBalance\":1, \"volume\":1, \"totalPercentRecieved\":1}}\n" +
+            "    ],\n" +
+            "    \"as\":\"report.balances\"}},\n" +
+            "{\"$unwind\":\"$report.balances\"},\n" +
             "{\"$sort\":{\"report.utc\":1}}" +
             "]";
 
@@ -125,13 +146,13 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
         System.out.println("branchID:" + branchId);
         System.out.println("dateFrom:" + dateFrom);
         System.out.println("dateTo:" + dateTo);
-        populateCellStyles(xls);
-        showCells();
+
         if (client == null) {
             client = MongoClient.createShared(rc.vertx(), new JsonObject(), "pawnshop-report");
         }
         xls.createSheet(branchId);
         xls.setActiveSheet(0);
+        populateCellStyles(xls);
         createHeader(xls, branchId);
 
         JsonArray pipeline = new JsonArray(String.format(query, branchId, dateFrom, dateTo, "%d/%m/%Y"));
@@ -150,38 +171,43 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
                             xlsRow.createCell(3).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanersPawned").toString()).longValue());
                             xlsRow.createCell(4).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanersBought").toString()).longValue());
                             xlsRow.createCell(5).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("pawnersRate").toString()).longValue());
-                            if (xlsRow.getRowNum() == 4) {
-                                xlsRow.createCell(6).setCellValue("");
-                            } else {
-                                xlsRow.createCell(6).setCellFormula(String.format("F%s/C%s*1", xlsRow.getRowNum(), xlsRow.getRowNum() + 1));
-                            }
+
                             xlsRow.createCell(7).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("cashboxMorning").getValue("value").toString()).longValue());
-                            xlsRow.createCell(8).setCellValue(String.valueOf(success.getJsonObject("report").getValue("volume")));
+                            xlsRow.createCell(8).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("volume").toString()).longValue());
                             xlsRow.createCell(9).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanedRub").toString()).longValue());
                             xlsRow.createCell(10).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("repayedRub").toString()).longValue());
-                            xlsRow.createCell(11).setCellValue(String.valueOf(success.getJsonObject("report").getValue("totalPercentRecieved")));
-                            xlsRow.createCell(12).setCellValue(String.valueOf(success.getJsonObject("report").getValue("percentRecieved")));
+                            xlsRow.createCell(11).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("totalPercentRecieved").toString()).longValue());
+                            xlsRow.createCell(12).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("percentRecieved").toString()).longValue());
                             xlsRow.createCell(13).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("dailyGrowth").toString()).longValue());
-                            xlsRow.createCell(14).setCellValue(String.valueOf(success.getJsonObject("report").getValue("dailyGrowthPercent")));
-                            xlsRow.createCell(15).setCellValue(String.valueOf(success.getJsonObject("report").getValue("goldBalance")));
+
+                            xlsRow.createCell(15).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("goldBalance").toString()));
                             xlsRow.createCell(16).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goldBought").toString()));
                             xlsRow.createCell(17).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goldSold").toString()));
-                            xlsRow.createCell(18).setCellValue(String.valueOf(success.getJsonObject("report").getValue("silverBalance")));
+                            xlsRow.createCell(18).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("silverBalance").toString()));
                             xlsRow.createCell(19).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("silverBought").toString()));
                             xlsRow.createCell(20).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("silverSold").toString()));
-                            xlsRow.createCell(21).setCellValue(String.valueOf(success.getJsonObject("report").getValue("diamondsBalance")));
+                            xlsRow.createCell(21).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("diamondsBalance").toString()));
                             xlsRow.createCell(22).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("diamondsBought").toString()));
                             xlsRow.createCell(23).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("diamondsSold").toString()));
-                            xlsRow.createCell(24).setCellValue(String.valueOf(success.getJsonObject("report").getValue("goodsBalance")));
+                            xlsRow.createCell(24).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("goodsBalance").toString()));
                             xlsRow.createCell(25).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goodsBought").toString()));
                             xlsRow.createCell(26).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goodsSold").toString()));
                             xlsRow.createCell(27).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("tradesActive").toString()).longValue());
                             xlsRow.createCell(28).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("silverTradeWeight").toString()));
                             xlsRow.createCell(29).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goldTradeWeight").toString()));
                             xlsRow.createCell(30).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("metalTradeSum").toString()).longValue());
-                            xlsRow.createCell(31).setCellValue(Long.valueOf(success.getJsonObject("report").getValue("goodsTradeSum").toString()));
-                            xlsRow.createCell(32).setCellValue(Long.valueOf(success.getJsonObject("report").getValue("auctionAmount").toString()));
+                            xlsRow.createCell(31).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goodsTradeSum").toString()).longValue());
+                            xlsRow.createCell(32).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("auctionAmount").toString()).longValue());
                             xlsRow.createCell(33).setCellValue(calculateExpences(success.getJsonObject("report").getValue("expenses")));
+                            if (xlsRow.getRowNum() == 4) {
+                                xlsRow.createCell(6).setCellValue("");
+                                xlsRow.createCell(14).setCellValue(0);
+                            } else {
+                                xlsRow.createCell(6).setCellFormula(String.format("F%s/C%s*1", xlsRow.getRowNum(), xlsRow.getRowNum() + 1));
+                                xlsRow.createCell(14).setCellFormula(String.format("J%s/I%s", xlsRow.getRowNum() + 1, xlsRow.getRowNum()));
+                                ;
+                            }
+
                             for (int i = 0; i < 34; i++) {
                                 xlsRow.getCell(i).setCellStyle(getDataStyle(i));
                             }
@@ -198,8 +224,13 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
                                     .putHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=UTF-8")
                                     .putHeader("Content-Disposition", "attachment; filename=\"report.xlsx\"")
                                     .end(Buffer.buffer(baos.toByteArray()));
+                            disposeXls();
                         }
                 );
+    }
+
+    private void disposeXls() {
+
     }
 
     private Long calculateExpences(Object value) {
@@ -223,6 +254,9 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
     }
 
     private void populateCellStyles(HSSFWorkbook xls) {
+        if(cellStyles!=null && !cellStyles.isEmpty()) {
+            cellStyles.clear();
+        }
         cellStyles.add(createCellStyle(xls, (short) 14, true, HorizontalAlignment.CENTER, (short) 0));      //0
         cellStyles.add(createCellStyle(xls, (short) 12, true, HorizontalAlignment.CENTER, (short) 0));      //1
 
@@ -274,7 +308,7 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
     }
 
     private HSSFCellStyle getDataStyle(int columnIndex) {
-        short colors[] = {7, 7, 8, 9, 10, 7, 14, 7, 8, 9, 10, 7, 9, 8, 7, 7, 9, 10, 7, 9, 10, 7, 9, 10, 7, 9, 10, 7, 11, 9, 7, 7, 7, 7};
+        short colors[] = {7, 7, 8, 9, 10, 7, 14, 7, 8, 9, 10, 7, 9, 8, 14, 7, 9, 10, 7, 9, 10, 7, 9, 10, 7, 9, 10, 7, 11, 9, 7, 7, 7, 7};
         return cellStyles.get(colors[columnIndex]);
     }
 
