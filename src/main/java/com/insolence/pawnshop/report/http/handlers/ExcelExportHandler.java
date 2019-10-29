@@ -44,6 +44,7 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "{\"$group\":{\n" +
             "    \"_id\":\"$_id\",\n" +
             "    \"report\":{\"$push\":{\n" +
+            "        \"branch\":\"$branch\",\n" +
             "        \"utc\":\"$date\",\n" +
             "        \"date\":{\"$dateToString\":{\n" +
             "            \"date\":{\"$toDate\":\"$date\"},\n" +
@@ -52,15 +53,15 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "        \"loanersAsset\":\"TODO\",\n" +
             "        \"loanersPawned\":\"$loanersPawned\",\n" +
             "        \"loanersBought\":\"$loanersBought\",\n" +
-            "        \"pawnersRate\":\"TODO\",\n" +
+            "        \"pawnersRate\":{\"$subtract\":[{\"$toDouble\":\"$loanersPawned\"},{\"$toDouble\":\"$loanersBought\"}]},\n" +
             "        \"pawnersRatePercent\":\"TODO\",\n" +
-            "        \"cashboxMorning\":\"TODO\",\n" +
+            "        \"cashboxEvening\":\"$cashboxEvening\",        \n" +
             "        \"volume\":\"TODO\",\n" +
             "        \"loanedRub\":\"$loanedRub\",\n" +
             "        \"repayedRub\":\"$repayedRub\",\n" +
             "        \"totalPercentRecieved\":\"TODO\",\n" +
             "        \"percentRecieved\":\"TODO\",\n" +
-            "        \"dailyGrowth\":\"TODO\",\n" +
+            "        \"dailyGrowth\":{\"$subtract\":[{\"$toDouble\":\"$loanedRub\"},{\"$toDouble\":\"$repayedRub\"}]},\n" +
             "        \"dailyGrowthPercent\":\"TODO\",\n" +
             "        \"goldBalance\":\"TODO\",\n" +
             "        \"goldBought\":\"$goldBought\",\n" +
@@ -83,7 +84,24 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "        \"expenses\":\"$expenses\"\n" +
             "        }}\n" +
             "    }},\n" +
-            "    {\"$unwind\":{\"path\":\"$report\", \"includeArrayIndex\":\"rownum\"}},\n" +
+            "    {\"$unwind\":{\"path\":\"$report\"}},    \n" +
+            "    {\"$lookup\":{\"from\":\"report\",\n" +
+            "        \"let\":{\"report_branch\":\"$report.branch\", \"report_date\":\"$report.utc\"},\n" +
+            "        \"pipeline\":[\n" +
+            "            {\"$match\":{\n" +
+            "                \"$expr\":{\n" +
+            "                    \"$and\":[\n" +
+            "                    {\"$eq\":[\"$branch\",\"$$report_branch\"]},\n" +
+            "                    {\"$lt\":[\"$date\",\"$$report_date\"]}\n" +
+            "                    ]}}},\n" +
+            "            {\"$sort\":{\"date\":-1}},\n" +
+            "            {\"$limit\":1},\n" +
+            "            {\"$project\":{\"_id\":0, \"value\":\"$cashboxEvening\"}}\n" +
+            "        ],\n" +
+            "        \"as\":\"report.cashboxMorning\"\n" +
+            "        }\n" +
+            "    },    \n" +
+            "    {\"$unwind\":{\"path\":\"$report.cashboxMorning\"}},\n" +
             "    {\"$sort\":{\"report.utc\":1}}    \n" +
             "]";
 
@@ -120,15 +138,15 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
                             xlsRow.createCell(2).setCellValue(String.valueOf(success.getJsonObject("report").getValue("loanersAsset")));
                             xlsRow.createCell(3).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanersPawned").toString()).longValue());
                             xlsRow.createCell(4).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanersBought").toString()).longValue());
-                            xlsRow.createCell(5).setCellValue(String.valueOf(success.getJsonObject("report").getValue("pawnersRate")));
+                            xlsRow.createCell(5).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("pawnersRate").toString()).longValue());
                             xlsRow.createCell(6).setCellValue(String.valueOf(success.getJsonObject("report").getValue("pawnersRatePercent")));
-                            xlsRow.createCell(7).setCellValue(String.valueOf(success.getJsonObject("report").getValue("cashboxMorning")));
+                            xlsRow.createCell(7).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("cashboxMorning").getValue("value").toString()).longValue());
                             xlsRow.createCell(8).setCellValue(String.valueOf(success.getJsonObject("report").getValue("volume")));
                             xlsRow.createCell(9).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanedRub").toString()).longValue());
                             xlsRow.createCell(10).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("repayedRub").toString()).longValue());
                             xlsRow.createCell(11).setCellValue(String.valueOf(success.getJsonObject("report").getValue("totalPercentRecieved")));
                             xlsRow.createCell(12).setCellValue(String.valueOf(success.getJsonObject("report").getValue("percentRecieved")));
-                            xlsRow.createCell(13).setCellValue(String.valueOf(success.getJsonObject("report").getValue("dailyGrowth")));
+                            xlsRow.createCell(13).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("dailyGrowth").toString()).longValue());
                             xlsRow.createCell(14).setCellValue(String.valueOf(success.getJsonObject("report").getValue("dailyGrowthPercent")));
                             xlsRow.createCell(15).setCellValue(String.valueOf(success.getJsonObject("report").getValue("goldBalance")));
                             xlsRow.createCell(16).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goldBought").toString()));
