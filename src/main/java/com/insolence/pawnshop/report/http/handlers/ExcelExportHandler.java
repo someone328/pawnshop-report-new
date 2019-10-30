@@ -9,138 +9,419 @@ import io.vertx.reactivex.ext.mongo.MongoClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.*;
-import org.apache.poi.hssf.util.HSSFColor;
-import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 
-import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class ExcelExportHandler implements Handler<RoutingContext> {
     private MongoClient client;
     private List<HSSFCellStyle> cellStyles = new ArrayList<>();
     String query = "[\n" +
-            "{\"$match\":{    \n" +
-            "    \"branch\":\"%s\",\n" +
-            "     \"date\":{\"$gte\":%s, \"$lte\":%s}}\n" +
-            "     },\n" +
-            "{\"$lookup\":{\n" +
-            "    \"from\":\"user\",\n" +
-            "    \"localField\":\"user\",\n" +
-            "    \"foreignField\":\"_id\",\n" +
-            "    \"as\":\"username\"\n" +
-            "    }},\n" +
-            "{\"$unwind\":{\"path\":\"$username\"}},\n" +
-            "{\"$group\":{\n" +
-            "    \"_id\":\"$_id\",\n" +
-            "    \"report\":{\"$push\":{\n" +
-            "    \"branch\":\"$branch\",\n" +
-            "    \"utc\":\"$date\",\n" +
-            "    \"date\":{\"$dateToString\":{\n" +
-            "        \"date\":{\"$toDate\":\"$date\"},\n" +
-            "        \"format\":\"%s\"}},\n" +
-            "    \"username\":\"$username.name\",\n" +
-            "    \"loanersPawned\":\"$loanersPawned\",\n" +
-            "    \"loanersBought\":\"$loanersBought\",\n" +
-            "    \"pawnersRate\":{\"$subtract\":[{\"$toDouble\":\"$loanersPawned\"},{\"$toDouble\":\"$loanersBought\"}]},\n" +
-            "    \"cashboxEvening\":\"$cashboxEvening\",\n" +
-            "    \"loanedRub\":\"$loanedRub\",\n" +
-            "    \"repayedRub\":\"$repayedRub\",\n" +
-            "    \"percentRecieved\":\"$percentRecieved\",\n" +
-            "    \"dailyGrowth\":{\"$subtract\":[{\"$toDouble\":\"$loanedRub\"},{\"$toDouble\":\"$repayedRub\"}]},\n" +
-            "    \"goldBought\":\"$goldBought\",\n" +
-            "    \"goldSold\":\"$goldSold\",\n" +
-            "    \"silverBought\":\"$silverBought\",\n" +
-            "    \"silverSold\":\"$silverSold\",\n" +
-            "    \"diamondsBought\":\"$diamondBought\",\n" +
-            "    \"diamondsSold\":\"$diamondSold\",\n" +
-            "    \"goodsBought\":\"$goodsBought\",\n" +
-            "    \"goodsSold\":\"$goodsSold\",\n" +
-            "    \"tradesActive\":\"$tradesActive\",\n" +
-            "    \"silverTradeWeight\":\"$silverTradeWeight\",\n" +
-            "    \"goldTradeWeight\":\"$goldTradeWeight\",\n" +
-            "    \"metalTradeSum\":{\"$add\":[{\"$toDouble\":\"$goldTradeSum\"},{\"$toDouble\":\"$silverTradeSum\"}]},\n" +
-            "    \"goodsTradeSum\":\"$goodsTradeSum\",\n" +
-            "    \"auctionAmount\":\"$auctionAmount\",\n" +
-            "    \"expenses\":\"$expenses\"\n" +
-            "    }}\n" +
-            "}},\n" +
-            "{\"$unwind\":{\"path\":\"$report\"}},    \n" +
-            "{\"$lookup\":{\"from\":\"report\",\n" +
-            "    \"let\":{\"report_branch\":\"$report.branch\", \"report_date\":\"$report.utc\"},\n" +
-            "    \"pipeline\":[\n" +
-            "        {\"$match\":{\n" +
-            "            \"$expr\":{\n" +
-            "                \"$and\":[\n" +
-            "                {\"$eq\":[\"$branch\",\"$$report_branch\"]},\n" +
-            "                {\"$lt\":[\"$date\",\"$$report_date\"]}\n" +
-            "                ]}}},\n" +
-            "        {\"$sort\":{\"date\":-1}},\n" +
-            "        {\"$limit\":1},\n" +
-            "        {\"$project\":{\"_id\":0, \"value\":\"$cashboxEvening\"}}\n" +
-            "    ],\n" +
-            "    \"as\":\"report.cashboxMorning\"\n" +
+            "  {\n" +
+            "    \"$match\": {\n" +
+            "      \"branch\": \"%s\",\n" +
+            "      \"date\": {\n" +
+            "        \"$gte\": %s,\n" +
+            "        \"$lte\": %s\n" +
+            "      }\n" +
             "    }\n" +
-            "},\n" +
-            "{\"$unwind\":{\"path\":\"$report.cashboxMorning\"}},\n" +
-            "{\"$lookup\":{\"from\":\"report\",\n" +
-            "    \"let\":{\"report_branch\":\"$report.branch\", \"report_date\":\"$report.utc\"},\n" +
-            "    \"pipeline\":[\n" +
-            "    {\"$match\":{\"$expr\":{\"$and\":[{\"$eq\":[\"$branch\",\"$$report_branch\"]},{\"$lt\":[\"$date\",\"$$report_date\"]}]}}},\n" +
-            "    {\"$group\":{\n" +
-            "        \"_id\":\"branch\",\n" +
-            "        \"loanersAsset\":\n" +
-            "        {\"$sum\":{\"$subtract\":[{\"$toDouble\":\"$loanersPawned\"}, {\"$toDouble\":\"$loanersBought\"}]}}}},\n" +
-            "        {\"$project\":{\"_id\":0, \"value\":\"$loanersAsset\"}}\n" +
-            "        ],\n" +
-            "        \"as\":\"report.loanersAsset\"}},\n" +
-            "{\"$unwind\":\"$report.loanersAsset\"},\n" +
-            "{\"$lookup\":{\"from\":\"report\",\n" +
-            "    \"let\":{\"report_branch\":\"$report.branch\", \"report_date\":\"$report.utc\"},\n" +
-            "    \"pipeline\":[\n" +
-            "    {\"$match\":{\"$expr\":{\"$and\":[{\"$eq\":[\"$branch\",\"$$report_branch\"]},{\"$lte\":[\"$date\",\"$$report_date\"]}]}}},\n" +
-            "    {\"$group\":{\n" +
-            "        \"_id\":\"branch\",\n" +
-            "        \"goldBalance\":{\"$sum\":{\n" +
-            "            \"$subtract\":[\n" +
-            "                {\"$subtract\":[{\"$toDouble\":\"$goldBought\"}, {\"$toDouble\":\"$goldSold\"}]},\n" +
-            "                {\"$toDouble\":\"$goldTradeWeight\"}]}},\n" +
-            "        \"silverBalance\":{\"$sum\":{\n" +
-            "            \"$subtract\":[\n" +
-            "                {\"$subtract\":[{\"$toDouble\":\"$silverBought\"}, {\"$toDouble\":\"$silverSold\"}]},\n" +
-            "                {\"$toDouble\":\"$silverTradeWeight\"}]}},\n" +
-            "        \"diamondsBalance\":{\"$sum\":{\"$subtract\":[{\"$toDouble\":\"$diamondBought\"}, {\"$toDouble\":\"$diamondSold\"}]}},\n" +
-            "        \"goodsBalance\":{\"$sum\":{\n" +
-            "            \"$subtract\":[\n" +
-            "                {\"$subtract\":[{\"$toDouble\":\"$goodsBought\"}, {\"$toDouble\":\"$goodsSold\"}]},\n" +
-            "                {\"$toDouble\":\"$goodsTradeSum\"}]}},\n" +
-            "        \"volume\":{\"$sum\":{\n" +
-            "            \"$subtract\":[\n" +
-            "                {\"$subtract\":[{\"$toDouble\":{\"$subtract\":[{\"$toDouble\":\"$loanedRub\"},{\"$toDouble\":\"$repayedRub\"}]}}, {\"$toDouble\":\"$goodsTradeSum\"}]},\n" +
-            "                {\"$toDouble\":{\"$add\":[{\"$toDouble\":\"$goldTradeSum\"},{\"$toDouble\":\"$silverTradeSum\"}]}}]}},\n" +
-            "        \"totalPercentRecieved\":{\"$sum\":{\"$toDouble\":\"$percentRecieved\"}}\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$lookup\": {\n" +
+            "      \"from\": \"user\",\n" +
+            "      \"localField\": \"user\",\n" +
+            "      \"foreignField\": \"_id\",\n" +
+            "      \"as\": \"username\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$unwind\": {\n" +
+            "      \"path\": \"$username\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$group\": {\n" +
+            "      \"_id\": \"$_id\",\n" +
+            "      \"report\": {\n" +
+            "        \"$push\": {\n" +
+            "          \"branch\": \"$branch\",\n" +
+            "          \"utc\": \"$date\",\n" +
+            "          \"date\": {\n" +
+            "            \"$dateToString\": {\n" +
+            "              \"date\": {\n" +
+            "                \"$toDate\": \"$date\"\n" +
+            "              },\n" +
+            "              \"format\": \"%s\"\n" +
+            "            }\n" +
+            "          },\n" +
+            "          \"username\": \"$username.name\",\n" +
+            "          \"loanersPawned\": \"$loanersPawned\",\n" +
+            "          \"loanersBought\": \"$loanersBought\",\n" +
+            "          \"pawnersRate\": {\n" +
+            "            \"$subtract\": [\n" +
+            "              {\n" +
+            "                \"$toDouble\": \"$loanersPawned\"\n" +
+            "              },\n" +
+            "              {\n" +
+            "                \"$toDouble\": \"$loanersBought\"\n" +
+            "              }\n" +
+            "            ]\n" +
+            "          },\n" +
+            "          \"cashboxEvening\": \"$cashboxEvening\",\n" +
+            "          \"loanedRub\": \"$loanedRub\",\n" +
+            "          \"repayedRub\": \"$repayedRub\",\n" +
+            "          \"percentRecieved\": \"$percentRecieved\",\n" +
+            "          \"dailyGrowth\": {\n" +
+            "            \"$subtract\": [\n" +
+            "              {\n" +
+            "                \"$toDouble\": \"$loanedRub\"\n" +
+            "              },\n" +
+            "              {\n" +
+            "                \"$toDouble\": \"$repayedRub\"\n" +
+            "              }\n" +
+            "            ]\n" +
+            "          },\n" +
+            "          \"goldBought\": \"$goldBought\",\n" +
+            "          \"goldSold\": \"$goldSold\",\n" +
+            "          \"silverBought\": \"$silverBought\",\n" +
+            "          \"silverSold\": \"$silverSold\",\n" +
+            "          \"diamondsBought\": \"$diamondBought\",\n" +
+            "          \"diamondsSold\": \"$diamondSold\",\n" +
+            "          \"goodsBought\": \"$goodsBought\",\n" +
+            "          \"goodsSold\": \"$goodsSold\",\n" +
+            "          \"tradesActive\": \"$tradesActive\",\n" +
+            "          \"silverTradeWeight\": \"$silverTradeWeight\",\n" +
+            "          \"goldTradeWeight\": \"$goldTradeWeight\",\n" +
+            "          \"metalTradeSum\": {\n" +
+            "            \"$add\": [\n" +
+            "              {\n" +
+            "                \"$toDouble\": \"$goldTradeSum\"\n" +
+            "              },\n" +
+            "              {\n" +
+            "                \"$toDouble\": \"$silverTradeSum\"\n" +
+            "              }\n" +
+            "            ]\n" +
+            "          },\n" +
+            "          \"goodsTradeSum\": \"$goodsTradeSum\",\n" +
+            "          \"auctionAmount\": \"$auctionAmount\",\n" +
+            "          \"expenses\": \"$expenses\"\n" +
             "        }\n" +
-            "    },\n" +
-            "    {\"$project\":{\"_id\":0, \"goldBalance\":1, \"silverBalance\":1, \"diamondsBalance\":1, \"goodsBalance\":1, \"volume\":1, \"totalPercentRecieved\":1}}\n" +
-            "    ],\n" +
-            "    \"as\":\"report.balances\"}},\n" +
-            "{\"$unwind\":\"$report.balances\"},\n" +
-            "{\"$sort\":{\"report.utc\":1}}" +
-            "]";
+            "      }\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$unwind\": {\n" +
+            "      \"path\": \"$report\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$lookup\": {\n" +
+            "      \"from\": \"report\",\n" +
+            "      \"let\": {\n" +
+            "        \"report_branch\": \"$report.branch\",\n" +
+            "        \"report_date\": \"$report.utc\"\n" +
+            "      },\n" +
+            "      \"pipeline\": [\n" +
+            "        {\n" +
+            "          \"$match\": {\n" +
+            "            \"$expr\": {\n" +
+            "              \"$and\": [\n" +
+            "                {\n" +
+            "                  \"$eq\": [\n" +
+            "                    \"$branch\",\n" +
+            "                    \"$$report_branch\"\n" +
+            "                  ]\n" +
+            "                },\n" +
+            "                {\n" +
+            "                  \"$lt\": [\n" +
+            "                    \"$date\",\n" +
+            "                    \"$$report_date\"\n" +
+            "                  ]\n" +
+            "                }\n" +
+            "              ]\n" +
+            "            }\n" +
+            "          }\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"$sort\": {\n" +
+            "            \"date\": -1\n" +
+            "          }\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"$limit\": 1\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"$project\": {\n" +
+            "            \"_id\": 0,\n" +
+            "            \"value\": \"$cashboxEvening\"\n" +
+            "          }\n" +
+            "        }\n" +
+            "      ],\n" +
+            "      \"as\": \"report.cashboxMorning\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$unwind\": {\n" +
+            "      \"path\": \"$report.cashboxMorning\",\n" +
+            "      \"preserveNullAndEmptyArrays\": true\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$lookup\": {\n" +
+            "      \"from\": \"report\",\n" +
+            "      \"let\": {\n" +
+            "        \"report_branch\": \"$report.branch\",\n" +
+            "        \"report_date\": \"$report.utc\"\n" +
+            "      },\n" +
+            "      \"pipeline\": [\n" +
+            "        {\n" +
+            "          \"$match\": {\n" +
+            "            \"$expr\": {\n" +
+            "              \"$and\": [\n" +
+            "                {\n" +
+            "                  \"$eq\": [\n" +
+            "                    \"$branch\",\n" +
+            "                    \"$$report_branch\"\n" +
+            "                  ]\n" +
+            "                },\n" +
+            "                {\n" +
+            "                  \"$lt\": [\n" +
+            "                    \"$date\",\n" +
+            "                    \"$$report_date\"\n" +
+            "                  ]\n" +
+            "                }\n" +
+            "              ]\n" +
+            "            }\n" +
+            "          }\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"$group\": {\n" +
+            "            \"_id\": \"branch\",\n" +
+            "            \"loanersAsset\": {\n" +
+            "              \"$sum\": {\n" +
+            "                \"$subtract\": [\n" +
+            "                  {\n" +
+            "                    \"$toDouble\": \"$loanersPawned\"\n" +
+            "                  },\n" +
+            "                  {\n" +
+            "                    \"$toDouble\": \"$loanersBought\"\n" +
+            "                  }\n" +
+            "                ]\n" +
+            "              }\n" +
+            "            }\n" +
+            "          }\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"$project\": {\n" +
+            "            \"_id\": 0,\n" +
+            "            \"value\": \"$loanersAsset\"\n" +
+            "          }\n" +
+            "        }\n" +
+            "      ],\n" +
+            "      \"as\": \"report.loanersAsset\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$unwind\": {\n" +
+            "      \"path\": \"$report.loanersAsset\",\n" +
+            "      \"preserveNullAndEmptyArrays\": true\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$lookup\": {\n" +
+            "      \"from\": \"report\",\n" +
+            "      \"let\": {\n" +
+            "        \"report_branch\": \"$report.branch\",\n" +
+            "        \"report_date\": \"$report.utc\"\n" +
+            "      },\n" +
+            "      \"pipeline\": [\n" +
+            "        {\n" +
+            "          \"$match\": {\n" +
+            "            \"$expr\": {\n" +
+            "              \"$and\": [\n" +
+            "                {\n" +
+            "                  \"$eq\": [\n" +
+            "                    \"$branch\",\n" +
+            "                    \"$$report_branch\"\n" +
+            "                  ]\n" +
+            "                },\n" +
+            "                {\n" +
+            "                  \"$lte\": [\n" +
+            "                    \"$date\",\n" +
+            "                    \"$$report_date\"\n" +
+            "                  ]\n" +
+            "                }\n" +
+            "              ]\n" +
+            "            }\n" +
+            "          }\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"$group\": {\n" +
+            "            \"_id\": \"branch\",\n" +
+            "            \"goldBalance\": {\n" +
+            "              \"$sum\": {\n" +
+            "                \"$subtract\": [\n" +
+            "                  {\n" +
+            "                    \"$subtract\": [\n" +
+            "                      {\n" +
+            "                        \"$toDouble\": \"$goldBought\"\n" +
+            "                      },\n" +
+            "                      {\n" +
+            "                        \"$toDouble\": \"$goldSold\"\n" +
+            "                      }\n" +
+            "                    ]\n" +
+            "                  },\n" +
+            "                  {\n" +
+            "                    \"$toDouble\": \"$goldTradeWeight\"\n" +
+            "                  }\n" +
+            "                ]\n" +
+            "              }\n" +
+            "            },\n" +
+            "            \"silverBalance\": {\n" +
+            "              \"$sum\": {\n" +
+            "                \"$subtract\": [\n" +
+            "                  {\n" +
+            "                    \"$subtract\": [\n" +
+            "                      {\n" +
+            "                        \"$toDouble\": \"$silverBought\"\n" +
+            "                      },\n" +
+            "                      {\n" +
+            "                        \"$toDouble\": \"$silverSold\"\n" +
+            "                      }\n" +
+            "                    ]\n" +
+            "                  },\n" +
+            "                  {\n" +
+            "                    \"$toDouble\": \"$silverTradeWeight\"\n" +
+            "                  }\n" +
+            "                ]\n" +
+            "              }\n" +
+            "            },\n" +
+            "            \"diamondsBalance\": {\n" +
+            "              \"$sum\": {\n" +
+            "                \"$subtract\": [\n" +
+            "                  {\n" +
+            "                    \"$toDouble\": \"$diamondBought\"\n" +
+            "                  },\n" +
+            "                  {\n" +
+            "                    \"$toDouble\": \"$diamondSold\"\n" +
+            "                  }\n" +
+            "                ]\n" +
+            "              }\n" +
+            "            },\n" +
+            "            \"goodsBalance\": {\n" +
+            "              \"$sum\": {\n" +
+            "                \"$subtract\": [\n" +
+            "                  {\n" +
+            "                    \"$subtract\": [\n" +
+            "                      {\n" +
+            "                        \"$toDouble\": \"$goodsBought\"\n" +
+            "                      },\n" +
+            "                      {\n" +
+            "                        \"$toDouble\": \"$goodsSold\"\n" +
+            "                      }\n" +
+            "                    ]\n" +
+            "                  },\n" +
+            "                  {\n" +
+            "                    \"$toDouble\": \"$goodsTradeSum\"\n" +
+            "                  }\n" +
+            "                ]\n" +
+            "              }\n" +
+            "            },\n" +
+            "            \"volume\": {\n" +
+            "              \"$sum\": {\n" +
+            "                \"$subtract\": [\n" +
+            "                  {\n" +
+            "                    \"$subtract\": [\n" +
+            "                      {\n" +
+            "                        \"$toDouble\": {\n" +
+            "                          \"$subtract\": [\n" +
+            "                            {\n" +
+            "                              \"$toDouble\": \"$loanedRub\"\n" +
+            "                            },\n" +
+            "                            {\n" +
+            "                              \"$toDouble\": \"$repayedRub\"\n" +
+            "                            }\n" +
+            "                          ]\n" +
+            "                        }\n" +
+            "                      },\n" +
+            "                      {\n" +
+            "                        \"$toDouble\": \"$goodsTradeSum\"\n" +
+            "                      }\n" +
+            "                    ]\n" +
+            "                  },\n" +
+            "                  {\n" +
+            "                    \"$toDouble\": {\n" +
+            "                      \"$add\": [\n" +
+            "                        {\n" +
+            "                          \"$toDouble\": \"$goldTradeSum\"\n" +
+            "                        },\n" +
+            "                        {\n" +
+            "                          \"$toDouble\": \"$silverTradeSum\"\n" +
+            "                        }\n" +
+            "                      ]\n" +
+            "                    }\n" +
+            "                  }\n" +
+            "                ]\n" +
+            "              }\n" +
+            "            },\n" +
+            "            \"totalPercentRecieved\": {\n" +
+            "              \"$sum\": {\n" +
+            "                \"$toDouble\": \"$percentRecieved\"\n" +
+            "              }\n" +
+            "            }\n" +
+            "          }\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"$project\": {\n" +
+            "            \"_id\": 0,\n" +
+            "            \"goldBalance\": 1,\n" +
+            "            \"silverBalance\": 1,\n" +
+            "            \"diamondsBalance\": 1,\n" +
+            "            \"goodsBalance\": 1,\n" +
+            "            \"volume\": 1,\n" +
+            "            \"totalPercentRecieved\": 1\n" +
+            "          }\n" +
+            "        }\n" +
+            "      ],\n" +
+            "      \"as\": \"report.balances\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$unwind\": {\n" +
+            "      \"path\": \"$report.balances\",\n" +
+            "      \"preserveNullAndEmptyArrays\": true\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$lookup\": {\n" +
+            "      \"from\": \"branch\",\n" +
+            "      \"localField\": \"report.branch\",\n" +
+            "      \"foreignField\": \"_id\",\n" +
+            "      \"as\": \"report.branch_info\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$unwind\": \"$report.branch_info\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$sort\": {\n" +
+            "      \"report.utc\": 1\n" +
+            "    }\n" +
+            "  }\n" +
+            "]\n";
+    String branchName = "";
 
     @Override
     public void handle(RoutingContext rc) {
         HSSFWorkbook xls = new HSSFWorkbook();
         JsonObject requestBody = rc.getBodyAsJson();
         String branchId = requestBody.getString("branchId");
+
         Long dateFrom = requestBody.getLong("dateFrom");
         Long dateTo = requestBody.getLong("dateTo");
         System.out.println("branchID:" + branchId);
@@ -163,74 +444,101 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
         client.aggregateWithOptions(CrudHandler.SupportedObjectTypes.REPORT.name().toLowerCase(), pipeline, aggregateOptions)
                 .toObservable()
                 .subscribe(
-                        success -> {
+                        excelData -> {
                             HSSFRow xlsRow = xls.getSheet(branchId).createRow(xls.getSheet(branchId).getLastRowNum() + 1);
-                            xlsRow.createCell(0).setCellValue(String.valueOf(success.getJsonObject("report").getValue("date")));
-                            xlsRow.createCell(1).setCellValue(String.valueOf(success.getJsonObject("report").getValue("username")));
-                            xlsRow.createCell(2).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("loanersAsset").getValue("value").toString()).longValue());
-                            xlsRow.createCell(3).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanersPawned").toString()).longValue());
-                            xlsRow.createCell(4).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanersBought").toString()).longValue());
-                            xlsRow.createCell(5).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("pawnersRate").toString()).longValue());
+                            JsonObject report = excelData.getJsonObject("report");
+                            xlsRow.createCell(0).setCellValue(getStringValue(report, "date"));
+                            xlsRow.createCell(1).setCellValue(getStringValue(report, "username"));
+                            xlsRow.createCell(2).setCellValue(getLongValue(report, "loanersAsset.value"));
+                            xlsRow.createCell(3).setCellValue(getLongValue(report, "loanersPawned"));
+                            xlsRow.createCell(4).setCellValue(getLongValue(report, "loanersBought"));
+                            xlsRow.createCell(5).setCellValue(getLongValue(report, "pawnersRate"));
 
-                            xlsRow.createCell(7).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("cashboxMorning").getValue("value").toString()).longValue());
-                            xlsRow.createCell(8).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("volume").toString()).longValue());
-                            xlsRow.createCell(9).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("loanedRub").toString()).longValue());
-                            xlsRow.createCell(10).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("repayedRub").toString()).longValue());
-                            xlsRow.createCell(11).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("totalPercentRecieved").toString()).longValue());
-                            xlsRow.createCell(12).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("percentRecieved").toString()).longValue());
-                            xlsRow.createCell(13).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("dailyGrowth").toString()).longValue());
+                            xlsRow.createCell(7).setCellValue(getLongValue(report, "cashboxMorning.value"));
+                            xlsRow.createCell(8).setCellValue(getLongValue(report, "balances.volume"));
+                            xlsRow.createCell(9).setCellValue(getLongValue(report, "loanedRub"));
+                            xlsRow.createCell(10).setCellValue(getLongValue(report, "repayedRub"));
+                            xlsRow.createCell(11).setCellValue(getLongValue(report, "balances.totalPercentRecieved"));
+                            xlsRow.createCell(12).setCellValue(getLongValue(report, "percentRecieved"));
+                            xlsRow.createCell(13).setCellValue(getLongValue(report, "dailyGrowth"));
 
-                            xlsRow.createCell(15).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("goldBalance").toString()));
-                            xlsRow.createCell(16).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goldBought").toString()));
-                            xlsRow.createCell(17).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goldSold").toString()));
-                            xlsRow.createCell(18).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("silverBalance").toString()));
-                            xlsRow.createCell(19).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("silverBought").toString()));
-                            xlsRow.createCell(20).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("silverSold").toString()));
-                            xlsRow.createCell(21).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("diamondsBalance").toString()));
-                            xlsRow.createCell(22).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("diamondsBought").toString()));
-                            xlsRow.createCell(23).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("diamondsSold").toString()));
-                            xlsRow.createCell(24).setCellValue(Double.valueOf(success.getJsonObject("report").getJsonObject("balances").getValue("goodsBalance").toString()));
-                            xlsRow.createCell(25).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goodsBought").toString()));
-                            xlsRow.createCell(26).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goodsSold").toString()));
-                            xlsRow.createCell(27).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("tradesActive").toString()).longValue());
-                            xlsRow.createCell(28).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("silverTradeWeight").toString()));
-                            xlsRow.createCell(29).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goldTradeWeight").toString()));
-                            xlsRow.createCell(30).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("metalTradeSum").toString()).longValue());
-                            xlsRow.createCell(31).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("goodsTradeSum").toString()).longValue());
-                            xlsRow.createCell(32).setCellValue(Double.valueOf(success.getJsonObject("report").getValue("auctionAmount").toString()).longValue());
-                            xlsRow.createCell(33).setCellValue(calculateExpences(success.getJsonObject("report").getValue("expenses")));
+                            xlsRow.createCell(15).setCellValue(getDoubleValue(report, "balances.goldBalance"));
+                            xlsRow.createCell(16).setCellValue(getDoubleValue(report, "goldBought"));
+                            xlsRow.createCell(17).setCellValue(getDoubleValue(report, "goldSold"));
+                            xlsRow.createCell(18).setCellValue(getDoubleValue(report, "balances.silverBalance"));
+                            xlsRow.createCell(19).setCellValue(getDoubleValue(report, "silverBought"));
+                            xlsRow.createCell(20).setCellValue(getDoubleValue(report, "silverSold"));
+                            xlsRow.createCell(21).setCellValue(getDoubleValue(report, "balances.diamondsBalance"));
+                            xlsRow.createCell(22).setCellValue(getDoubleValue(report, "diamondsBought"));
+                            xlsRow.createCell(23).setCellValue(getDoubleValue(report, "diamondsSold"));
+                            xlsRow.createCell(24).setCellValue(getDoubleValue(report, "balances.goodsBalance"));
+                            xlsRow.createCell(25).setCellValue(getDoubleValue(report, "goodsBought"));
+                            xlsRow.createCell(26).setCellValue(getDoubleValue(report, "goodsSold"));
+                            xlsRow.createCell(27).setCellValue(getLongValue(report, "tradesActive"));
+                            xlsRow.createCell(28).setCellValue(getDoubleValue(report, "silverTradeWeight"));
+                            xlsRow.createCell(29).setCellValue(getDoubleValue(report, "goldTradeWeight"));
+                            xlsRow.createCell(30).setCellValue(getLongValue(report, "metalTradeSum"));
+                            xlsRow.createCell(31).setCellValue(getLongValue(report, "goodsTradeSum"));
+                            xlsRow.createCell(32).setCellValue(getLongValue(report, "auctionAmount"));
+                            xlsRow.createCell(33).setCellValue(calculateExpences(report));
                             if (xlsRow.getRowNum() == 4) {
                                 xlsRow.createCell(6).setCellValue("");
                                 xlsRow.createCell(14).setCellValue(0);
                             } else {
                                 xlsRow.createCell(6).setCellFormula(String.format("F%s/C%s*1", xlsRow.getRowNum(), xlsRow.getRowNum() + 1));
                                 xlsRow.createCell(14).setCellFormula(String.format("J%s/I%s", xlsRow.getRowNum() + 1, xlsRow.getRowNum()));
-                                ;
                             }
-
                             for (int i = 0; i < 34; i++) {
                                 xlsRow.getCell(i).setCellStyle(getDataStyle(i));
                             }
+                            setSheetName(report.getJsonObject("branch_info").getString("name"));
                         },
                         error -> {
                             log.error("Excel export error.", error);
-                            //rc.fail(500, new Exception("Ошибка экспорта в excel"));
+                            rc.fail(500, new Exception("Ошибка экспорта в excel"));
                         },
                         () -> {
                             HSSFFormulaEvaluator.evaluateAllFormulaCells(xls);
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            xls.setSheetName(0, branchName);
                             xls.write(baos);
                             rc.response()
                                     .putHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=UTF-8")
                                     .putHeader("Content-Disposition", "attachment; filename=\"report.xlsx\"")
                                     .end(Buffer.buffer(baos.toByteArray()));
-                            disposeXls();
                         }
                 );
     }
 
-    private void disposeXls() {
+    private String getStringValue(JsonObject rpt, String path) {
+        String[] pathParts = path.split("\\.");
+        JsonObject tmp = rpt;
+        int i;
+        for (i = 0; i < pathParts.length - 1; i++) {
+            if (tmp.containsKey(pathParts[i])) {
+                tmp = tmp.getJsonObject(pathParts[i]);
+            } else {
+                return "";
+            }
+        }
+        if (tmp.containsKey(pathParts[i])) {
+            return String.valueOf(tmp.getValue(pathParts[i]).toString());
+        } else {
+            return "";
+        }
+    }
 
+    private Long getLongValue(JsonObject rpt, String path) {
+        return getDoubleValue(rpt, path).longValue();
+    }
+
+    private Double getDoubleValue(JsonObject rpt, String path) {
+        String stringValue = getStringValue(rpt, path);
+        return Double.valueOf(stringValue.isEmpty() ? "0" : stringValue);
+    }
+
+    private void setSheetName(String name) {
+        branchName = name;
     }
 
     private Long calculateExpences(Object value) {
@@ -238,23 +546,27 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             return 0L;
         }
         try {
-            JsonArray expenses = (JsonArray) value;
-            return expenses.stream()
-                    .map(j -> {
-                        JsonObject e = (JsonObject) j;
-                        if (e != null && e.containsKey("sum")) {
-                            return Double.valueOf(e.getValue("sum").toString()).longValue();
-                        }
-                        return 0L;
-                    })
-                    .reduce(0L, Long::sum);
+            if (((JsonObject) value).containsKey("expenses")) {
+                JsonArray expenses = ((JsonObject) value).getJsonArray("expenses");
+                return expenses.stream()
+                        .map(j -> {
+                            JsonObject e = (JsonObject) j;
+                            if (e != null && e.containsKey("sum")) {
+                                return Double.valueOf(e.getValue("sum").toString()).longValue();
+                            }
+                            return 0L;
+                        })
+                        .reduce(0L, Long::sum);
+            } else {
+                return 0L;
+            }
         } catch (Exception ex) {
-            return null;
+            return 0L;
         }
     }
 
     private void populateCellStyles(HSSFWorkbook xls) {
-        if(cellStyles!=null && !cellStyles.isEmpty()) {
+        if (cellStyles != null && !cellStyles.isEmpty()) {
             cellStyles.clear();
         }
         cellStyles.add(createCellStyle(xls, (short) 14, true, HorizontalAlignment.CENTER, (short) 0));      //0
@@ -279,7 +591,8 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
         cellStyles.get(14).setDataFormat((short) 10);
     }
 
-    private HSSFCellStyle createCellStyle(HSSFWorkbook xls, short fontSize, boolean isBold, HorizontalAlignment horizontalAlignment, short foregroundColorIndex) {
+    private HSSFCellStyle createCellStyle(HSSFWorkbook xls, short fontSize, boolean isBold, HorizontalAlignment
+            horizontalAlignment, short foregroundColorIndex) {
         HSSFFont font = xls.createFont();
         font.setFontHeightInPoints(fontSize);
         font.setBold(isBold);
