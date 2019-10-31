@@ -65,10 +65,17 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "          \"pawnersRate\": {\n" +
             "            \"$subtract\": [\n" +
             "              {\n" +
-            "                \"$toDouble\": \"$loanersPawned\"\n" +
+            "                \"$subtract\": [\n" +
+            "                  {\n" +
+            "                    \"$toDouble\": \"$loanersPawned\"\n" +
+            "                  },\n" +
+            "                  {\n" +
+            "                    \"$toDouble\": \"$loanersBought\"\n" +
+            "                  }\n" +
+            "                ]\n" +
             "              },\n" +
             "              {\n" +
-            "                \"$toDouble\": \"$loanersBought\"\n" +
+            "                \"$toDouble\": \"$tradesActive\"\n" +
             "              }\n" +
             "            ]\n" +
             "          },\n" +
