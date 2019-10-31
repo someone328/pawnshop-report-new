@@ -17,61 +17,200 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
+import java.util.Date;
 
 import static com.insolence.pawnshop.report.util.BigDecimalUtils.noNull;
-import static com.insolence.pawnshop.report.util.DateUtils.*;
+import static com.insolence.pawnshop.report.util.DateUtils.getFirstMomentOfYear;
+import static com.insolence.pawnshop.report.util.DateUtils.getLastMomentOfYear;
 import static com.insolence.pawnshop.report.verticles.CalculateDynamicsVerticle.DYNAMICS_CALCULATIONS;
 
 @Slf4j
 public class StatisticsHandler implements Handler<RoutingContext> {
     private static final String statisticsRequest = "[\n" +
-            "{\"$match\": {\"branch\": {\"$ne\": null},\"date\": {\"$gte\": %s}}},\n" +
-            "{\"$match\": {\"branch\": {\"$ne\": null},\"date\": {\"$lte\": %s}}},\n" +
-            "{\"$lookup\":{\n" +
-            "        \"from\":\"report\",\n" +
-            "        \"let\":{\"report_branch\":\"$branch\", \"report_date\":\"$date\"},\n" +
-            "        \"pipeline\":[\n" +
-            "            {\"$match\":{\n" +
-            "                \"$expr\":{\n" +
-            "                    \"$and\":[\n" +
-            "                    {\"$eq\":[\"$branch\",\"$$report_branch\"]},\n" +
-            "                    {\"$lt\":[\"$date\",\"$$report_date\"]}\n" +
-            "                    ]}}},\n" +
-            "            {\"$sort\":{\"date\":-1}},\n" +
-            "            {\"$limit\":1},\n" +
-            "            {\"$project\":{\"_id\":0, \"cashboxEvening\":1}}\n" +
-            "        ],\n" +
-            "        \"as\":\"cashboxMorning\"\n" +
+            "  {\n" +
+            "    \"$match\": {\n" +
+            "      \"branch\": {\n" +
+            "        \"$ne\": null\n" +
+            "      },\n" +
+            "      \"date\": {\n" +
+            "        \"$gte\": %s,\n" +
+            "        \"$lte\": %s\n" +
+            "      }\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$lookup\": {\n" +
+            "      \"from\": \"report\",\n" +
+            "      \"let\": {\n" +
+            "        \"report_branch\": \"$branch\",\n" +
+            "        \"report_date\": \"$date\"\n" +
+            "      },\n" +
+            "      \"pipeline\": [\n" +
+            "        {\n" +
+            "          \"$match\": {\n" +
+            "            \"$expr\": {\n" +
+            "              \"$and\": [\n" +
+            "                {\n" +
+            "                  \"$eq\": [\n" +
+            "                    \"$branch\",\n" +
+            "                    \"$$report_branch\"\n" +
+            "                  ]\n" +
+            "                },\n" +
+            "                {\n" +
+            "                  \"$lt\": [\n" +
+            "                    \"$date\",\n" +
+            "                    \"$$report_date\"\n" +
+            "                  ]\n" +
+            "                }\n" +
+            "              ]\n" +
+            "            }\n" +
+            "          }\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"$sort\": {\n" +
+            "            \"date\": -1\n" +
+            "          }\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"$limit\": 1\n" +
+            "        },\n" +
+            "        {\n" +
+            "          \"$project\": {\n" +
+            "            \"_id\": 0,\n" +
+            "            \"cashboxEvening\": 1\n" +
+            "          }\n" +
             "        }\n" +
-            "    },\n" +
-            "    {\"$unwind\":\"$cashboxMorning\"},\n" +
-            "     {\"$project\":{\"_id\":1, \"branch\": 1, \"user\": 1, \"date\": 1, \"loanersPawned\":1, \"loanersBought\": 1, \"loanedRub\": 1,     \"repayedRub\": 1,\"percentRecieved\": 1,\"goldBought\": 1,\"goldSold\": 1,\"silverBought\": 1,\n" +
-            "    \"silverSold\": 1,\"diamondBought\": 1,\"diamondSold\": 1,\"goodsBought\": 1,\"goodsSold\": 1,\"cashboxEvening\": 1,\n" +
-            "    \"cashboxMorning\":\"$cashboxMorning.cashboxEvening\",\"tradesActive\": 1,\"goldTradeSum\": 1,\"goldTradeWeight\": 1,\n" +
-            "    \"silverTradeSum\": 1,\"silverTradeWeight\": 1,\"diamondsTradeWeight\": 1,\"goodsTradeSum\": 1,\"expenses\": 1,\n" +
-            "    \"auctionAmount\": 1,\"version\":1}},\n" +
-            "    {\"$sort\": {\"branch\": 1, \"date\": 1}},\n" +
-            "    {\"$lookup\":{\"from\":\"report\",\"localField\":\"_id\",\"foreignField\":\"_id\",\"as\":\"report\"}},        \n" +
-            "    {\"$addFields\":{\"report.cashboxMorning\":\"$cashboxMorning\"}},\n" +
-            "    {\"$group\": {\n" +
-            "        \"_id\": {\"branch\": \"$branch\", \"month\": {\"$month\": {\"$toDate\": \"$date\"}}},\n" +
-            "        \"documentCount\": {\"$sum\": 1},\n" +
-            "        \"reports\": {\"$push\": {\"$arrayElemAt\" :[\"$report\", 0]}}\n" +
-            "    }},\n" +
-            "    {\"$group\": {\n" +
-            "        \"_id\": {\"branch\": \"$_id.branch\"},\n" +
-            "        \"reportStatIndex\": {\"$push\": {\"month\": \"$_id.month\", \"reports\": \"$reports\"}}\n" +
-            "    }},\n" +
-            "    {\"$unwind\": \"$reportStatIndex\"},\n" +
-            "    {\"$sort\": {\"reportStatIndex.month\": 1}},\n" +
-            "    {\"$group\": {\"_id\": \"$_id\", \"reportStatIndex\": {\"$push\": \"$reportStatIndex\"}}},\n" +
-            "    {\"$lookup\": {\"from\": \"branch\", \"localField\": \"_id.branch\", \"foreignField\": \"_id\", \"as\": \"branchInfo\"}},\n" +
-            "    {\"$unwind\" : \"$branchInfo\" }, \n" +
-            "    {\"$sort\": {\"branchInfo.name\": 1}}\n" +
-            "]";
+            "      ],\n" +
+            "      \"as\": \"cashboxMorning\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$unwind\": \"$cashboxMorning\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$project\": {\n" +
+            "      \"_id\": 1,\n" +
+            "      \"branch\": 1,\n" +
+            "      \"user\": 1,\n" +
+            "      \"date\": 1,\n" +
+            "      \"loanersPawned\": 1,\n" +
+            "      \"loanersBought\": 1,\n" +
+            "      \"loanedRub\": 1,\n" +
+            "      \"repayedRub\": 1,\n" +
+            "      \"percentRecieved\": 1,\n" +
+            "      \"goldBought\": 1,\n" +
+            "      \"goldSold\": 1,\n" +
+            "      \"silverBought\": 1,\n" +
+            "      \"silverSold\": 1,\n" +
+            "      \"diamondBought\": 1,\n" +
+            "      \"diamondSold\": 1,\n" +
+            "      \"goodsBought\": 1,\n" +
+            "      \"goodsSold\": 1,\n" +
+            "      \"cashboxEvening\": 1,\n" +
+            "      \"cashboxMorning\": \"$cashboxMorning.cashboxEvening\",\n" +
+            "      \"tradesActive\": 1,\n" +
+            "      \"goldTradeSum\": 1,\n" +
+            "      \"goldTradeWeight\": 1,\n" +
+            "      \"silverTradeSum\": 1,\n" +
+            "      \"silverTradeWeight\": 1,\n" +
+            "      \"diamondsTradeWeight\": 1,\n" +
+            "      \"goodsTradeSum\": 1,\n" +
+            "      \"expenses\": 1,\n" +
+            "      \"auctionAmount\": 1,\n" +
+            "      \"version\": 1\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$sort\": {\n" +
+            "      \"branch\": 1,\n" +
+            "      \"date\": 1\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$lookup\": {\n" +
+            "      \"from\": \"report\",\n" +
+            "      \"localField\": \"_id\",\n" +
+            "      \"foreignField\": \"_id\",\n" +
+            "      \"as\": \"report\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$addFields\": {\n" +
+            "      \"report.cashboxMorning\": \"$cashboxMorning\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$group\": {\n" +
+            "      \"_id\": {\n" +
+            "        \"branch\": \"$branch\",\n" +
+            "        \"month\": {\n" +
+            "          \"$month\": {\n" +
+            "            \"$toDate\": \"$date\"\n" +
+            "          }\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"documentCount\": {\n" +
+            "        \"$sum\": 1\n" +
+            "      },\n" +
+            "      \"reports\": {\n" +
+            "        \"$push\": {\n" +
+            "          \"$arrayElemAt\": [\n" +
+            "            \"$report\",\n" +
+            "            0\n" +
+            "          ]\n" +
+            "        }\n" +
+            "      }\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$group\": {\n" +
+            "      \"_id\": {\n" +
+            "        \"branch\": \"$_id.branch\"\n" +
+            "      },\n" +
+            "      \"reportStatIndex\": {\n" +
+            "        \"$push\": {\n" +
+            "          \"month\": \"$_id.month\",\n" +
+            "          \"reports\": \"$reports\"\n" +
+            "        }\n" +
+            "      }\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$unwind\": \"$reportStatIndex\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$sort\": {\n" +
+            "      \"reportStatIndex.month\": 1\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$group\": {\n" +
+            "      \"_id\": \"$_id\",\n" +
+            "      \"reportStatIndex\": {\n" +
+            "        \"$push\": \"$reportStatIndex\"\n" +
+            "      }\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$lookup\": {\n" +
+            "      \"from\": \"branch\",\n" +
+            "      \"localField\": \"_id.branch\",\n" +
+            "      \"foreignField\": \"_id\",\n" +
+            "      \"as\": \"branchInfo\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$unwind\": \"$branchInfo\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"$sort\": {\n" +
+            "      \"branchInfo.name\": 1\n" +
+            "    }\n" +
+            "  }\n" +
+            "]\n";
     private static final BigDecimal goldBySilverContentDivision = new BigDecimal(999.9).divide(new BigDecimal(585.0), 4, RoundingMode.HALF_UP);
     private EventBus bus;
 
@@ -154,9 +293,14 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                 .reduceWith(() -> BigDecimal.ZERO, BigDecimal::add)
                 .map(summ -> {
                     row.setMonthAverageBasket(summ.subtract(row.getStartBasket())
-                            .divide(new BigDecimal(30), 2, RoundingMode.HALF_UP));
+                            .divide(new BigDecimal(getNumberOfDays(new Date(row.getLastReport().getDate()))), 2, RoundingMode.HALF_UP));
                     return row;
                 });
+    }
+
+    private int getNumberOfDays(Date date) {
+        YearMonth yearMonth = YearMonth.of(date.getYear(), date.getMonth() + 1);
+        return yearMonth.lengthOfMonth();
     }
 
     private StatisticsReportForBranchRow calculateTradeIncome(StatisticsReportForBranchRow row) {
