@@ -190,7 +190,7 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "                  ]\n" +
             "                },\n" +
             "                {\n" +
-            "                  \"$lt\": [\n" +
+            "                  \"$lte\": [\n" +
             "                    \"$date\",\n" +
             "                    \"$$report_date\"\n" +
             "                  ]\n" +
@@ -202,16 +202,19 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "        {\n" +
             "          \"$group\": {\n" +
             "            \"_id\": \"branch\",\n" +
-            "            \"loanersAsset\": {\n" +
+            "            \"loanersPawnedSum\": {\n" +
             "              \"$sum\": {\n" +
-            "                \"$subtract\": [\n" +
-            "                  {\n" +
-            "                    \"$toDouble\": \"$loanersPawned\"\n" +
-            "                  },\n" +
-            "                  {\n" +
-            "                    \"$toDouble\": \"$loanersBought\"\n" +
-            "                  }\n" +
-            "                ]\n" +
+            "                \"$toLong\": \"$loanersPawned\"\n" +
+            "              }\n" +
+            "            },\n" +
+            "            \"loanersBoughtSum\": {\n" +
+            "              \"$sum\": {\n" +
+            "                \"$toLong\": \"$loanersBought\"\n" +
+            "              }\n" +
+            "            },\n" +
+            "            \"tradeActive\": {\n" +
+            "              \"$sum\": {\n" +
+            "                \"$toLong\": \"$tradesActive\"\n" +
             "              }\n" +
             "            }\n" +
             "          }\n" +
@@ -219,7 +222,17 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "        {\n" +
             "          \"$project\": {\n" +
             "            \"_id\": 0,\n" +
-            "            \"value\": \"$loanersAsset\"\n" +
+            "            \"value\": {\n" +
+            "              \"$subtract\": [\n" +
+            "                {\n" +
+            "                  \"$subtract\": [\n" +
+            "                    \"$loanersPawnedSum\",\n" +
+            "                    \"$loanersBoughtSum\"\n" +
+            "                  ]\n" +
+            "                },\n" +
+            "                \"$tradeActive\"\n" +
+            "              ]\n" +
+            "            }\n" +
             "          }\n" +
             "        }\n" +
             "      ],\n" +
@@ -305,10 +318,17 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "              \"$sum\": {\n" +
             "                \"$subtract\": [\n" +
             "                  {\n" +
-            "                    \"$toDouble\": \"$diamondBought\"\n" +
+            "                    \"$subtract\": [\n" +
+            "                      {\n" +
+            "                        \"$toDouble\": \"$diamondBought\"\n" +
+            "                      },\n" +
+            "                      {\n" +
+            "                        \"$toDouble\": \"$diamondSold\"\n" +
+            "                      }\n" +
+            "                    ]\n" +
             "                  },\n" +
             "                  {\n" +
-            "                    \"$toDouble\": \"$diamondSold\"\n" +
+            "                    \"$toDouble\": \"$diamondsTradeWeight\"\n" +
             "                  }\n" +
             "                ]\n" +
             "              }\n" +
@@ -413,7 +433,7 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
             "      \"report.utc\": 1\n" +
             "    }\n" +
             "  }\n" +
-            "]\n";
+            "]";
     String branchName = "";
 
     @Override
@@ -483,11 +503,10 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
                             xlsRow.createCell(33).setCellValue(calculateExpences(report));
                             if (xlsRow.getRowNum() == 4) {
                                 xlsRow.createCell(6).setCellValue("");
-                                xlsRow.createCell(14).setCellValue(0);
                             } else {
-                                xlsRow.createCell(6).setCellFormula(String.format("F%s/C%s*1", xlsRow.getRowNum(), xlsRow.getRowNum() + 1));
-                                xlsRow.createCell(14).setCellFormula(String.format("J%s/I%s", xlsRow.getRowNum() + 1, xlsRow.getRowNum()));
+                                xlsRow.createCell(6).setCellFormula(String.format("F%s/C%s*1", xlsRow.getRowNum() + 1, xlsRow.getRowNum()));
                             }
+                            xlsRow.createCell(14).setCellFormula(String.format("N%s/I%s", xlsRow.getRowNum() + 1, xlsRow.getRowNum() + 1));
                             for (int i = 0; i < 34; i++) {
                                 xlsRow.getCell(i).setCellStyle(getDataStyle(i));
                             }

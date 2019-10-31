@@ -1,10 +1,10 @@
 [
   {
     "$match": {
-      "branch": "5d3775e442105000ccc036ee",
+      "branch": "5da7e6dc48a9f87a97e15917",
       "date": {
-        "$gte": 1546114400000,
-        "$lte": 1577750400000
+        "$gte": 1567296000000,
+        "$lte": 1569801600000
       }
     }
   },
@@ -167,7 +167,7 @@
                   ]
                 },
                 {
-                  "$lt": [
+                  "$lte": [
                     "$date",
                     "$$report_date"
                   ]
@@ -179,16 +179,19 @@
         {
           "$group": {
             "_id": "branch",
-            "loanersAsset": {
+            "loanersPawnedSum": {
               "$sum": {
-                "$subtract": [
-                  {
-                    "$toDouble": "$loanersPawned"
-                  },
-                  {
-                    "$toDouble": "$loanersBought"
-                  }
-                ]
+                "$toLong": "$loanersPawned"
+              }
+            },
+            "loanersBoughtSum": {
+              "$sum": {
+                "$toLong": "$loanersBought"
+              }
+            },
+            "tradeActive": {
+              "$sum": {
+                "$toLong": "$tradesActive"
               }
             }
           }
@@ -196,7 +199,17 @@
         {
           "$project": {
             "_id": 0,
-            "value": "$loanersAsset"
+            "value": {
+              "$subtract": [
+                {
+                  "$subtract": [
+                    "$loanersPawnedSum",
+                    "$loanersBoughtSum"
+                  ]
+                },
+                "$tradeActive"
+              ]
+            }
           }
         }
       ],
@@ -282,10 +295,17 @@
               "$sum": {
                 "$subtract": [
                   {
-                    "$toDouble": "$diamondBought"
+                    "$subtract": [
+                      {
+                        "$toDouble": "$diamondBought"
+                      },
+                      {
+                        "$toDouble": "$diamondSold"
+                      }
+                    ]
                   },
                   {
-                    "$toDouble": "$diamondSold"
+                    "$toDouble": "$diamondsTradeWeight"
                   }
                 ]
               }

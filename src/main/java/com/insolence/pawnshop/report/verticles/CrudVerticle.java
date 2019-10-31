@@ -66,7 +66,6 @@ public class CrudVerticle extends AbstractVerticle {
                 .subscribe(r -> {
                         },
                         error -> log.error("crud error", error));
-
         vertx
                 .eventBus()
                 .consumer("crud.get")
