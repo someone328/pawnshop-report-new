@@ -1,0 +1,393 @@
+[
+  {
+    "$match": {
+      "branch": "5d3775e442105000ccc036ee",
+      "date": {
+        "$gte": 1546114400000,
+        "$lte": 1577750400000
+      }
+    }
+  },
+  {
+    "$lookup": {
+      "from": "user",
+      "localField": "user",
+      "foreignField": "_id",
+      "as": "username"
+    }
+  },
+  {
+    "$unwind": {
+      "path": "$username"
+    }
+  },
+  {
+    "$group": {
+      "_id": "$_id",
+      "report": {
+        "$push": {
+          "branch": "$branch",
+          "utc": "$date",
+          "date": {
+            "$dateToString": {
+              "date": {
+                "$toDate": "$date"
+              },
+              "format": "%d/%m/%Y"
+            }
+          },
+          "username": "$username.name",
+          "loanersPawned": "$loanersPawned",
+          "loanersBought": "$loanersBought",
+          "pawnersRate": {
+            "$subtract": [
+              {
+                "$toDouble": "$loanersPawned"
+              },
+              {
+                "$toDouble": "$loanersBought"
+              }
+            ]
+          },
+          "cashboxEvening": "$cashboxEvening",
+          "loanedRub": "$loanedRub",
+          "repayedRub": "$repayedRub",
+          "percentRecieved": "$percentRecieved",
+          "dailyGrowth": {
+            "$subtract": [
+              {
+                "$toDouble": "$loanedRub"
+              },
+              {
+                "$toDouble": "$repayedRub"
+              }
+            ]
+          },
+          "goldBought": "$goldBought",
+          "goldSold": "$goldSold",
+          "silverBought": "$silverBought",
+          "silverSold": "$silverSold",
+          "diamondsBought": "$diamondBought",
+          "diamondsSold": "$diamondSold",
+          "goodsBought": "$goodsBought",
+          "goodsSold": "$goodsSold",
+          "tradesActive": "$tradesActive",
+          "silverTradeWeight": "$silverTradeWeight",
+          "goldTradeWeight": "$goldTradeWeight",
+          "metalTradeSum": {
+            "$add": [
+              {
+                "$toDouble": "$goldTradeSum"
+              },
+              {
+                "$toDouble": "$silverTradeSum"
+              }
+            ]
+          },
+          "goodsTradeSum": "$goodsTradeSum",
+          "auctionAmount": "$auctionAmount",
+          "expenses": "$expenses"
+        }
+      }
+    }
+  },
+  {
+    "$unwind": {
+      "path": "$report"
+    }
+  },
+  {
+    "$lookup": {
+      "from": "report",
+      "let": {
+        "report_branch": "$report.branch",
+        "report_date": "$report.utc"
+      },
+      "pipeline": [
+        {
+          "$match": {
+            "$expr": {
+              "$and": [
+                {
+                  "$eq": [
+                    "$branch",
+                    "$$report_branch"
+                  ]
+                },
+                {
+                  "$lt": [
+                    "$date",
+                    "$$report_date"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$sort": {
+            "date": -1
+          }
+        },
+        {
+          "$limit": 1
+        },
+        {
+          "$project": {
+            "_id": 0,
+            "value": "$cashboxEvening"
+          }
+        }
+      ],
+      "as": "report.cashboxMorning"
+    }
+  },
+  {
+    "$unwind": {
+      "path": "$report.cashboxMorning",
+      "preserveNullAndEmptyArrays": true
+    }
+  },
+  {
+    "$lookup": {
+      "from": "report",
+      "let": {
+        "report_branch": "$report.branch",
+        "report_date": "$report.utc"
+      },
+      "pipeline": [
+        {
+          "$match": {
+            "$expr": {
+              "$and": [
+                {
+                  "$eq": [
+                    "$branch",
+                    "$$report_branch"
+                  ]
+                },
+                {
+                  "$lt": [
+                    "$date",
+                    "$$report_date"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$group": {
+            "_id": "branch",
+            "loanersAsset": {
+              "$sum": {
+                "$subtract": [
+                  {
+                    "$toDouble": "$loanersPawned"
+                  },
+                  {
+                    "$toDouble": "$loanersBought"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "$project": {
+            "_id": 0,
+            "value": "$loanersAsset"
+          }
+        }
+      ],
+      "as": "report.loanersAsset"
+    }
+  },
+  {
+    "$unwind": {
+      "path": "$report.loanersAsset",
+      "preserveNullAndEmptyArrays": true
+    }
+  },
+  {
+    "$lookup": {
+      "from": "report",
+      "let": {
+        "report_branch": "$report.branch",
+        "report_date": "$report.utc"
+      },
+      "pipeline": [
+        {
+          "$match": {
+            "$expr": {
+              "$and": [
+                {
+                  "$eq": [
+                    "$branch",
+                    "$$report_branch"
+                  ]
+                },
+                {
+                  "$lte": [
+                    "$date",
+                    "$$report_date"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$group": {
+            "_id": "branch",
+            "goldBalance": {
+              "$sum": {
+                "$subtract": [
+                  {
+                    "$subtract": [
+                      {
+                        "$toDouble": "$goldBought"
+                      },
+                      {
+                        "$toDouble": "$goldSold"
+                      }
+                    ]
+                  },
+                  {
+                    "$toDouble": "$goldTradeWeight"
+                  }
+                ]
+              }
+            },
+            "silverBalance": {
+              "$sum": {
+                "$subtract": [
+                  {
+                    "$subtract": [
+                      {
+                        "$toDouble": "$silverBought"
+                      },
+                      {
+                        "$toDouble": "$silverSold"
+                      }
+                    ]
+                  },
+                  {
+                    "$toDouble": "$silverTradeWeight"
+                  }
+                ]
+              }
+            },
+            "diamondsBalance": {
+              "$sum": {
+                "$subtract": [
+                  {
+                    "$toDouble": "$diamondBought"
+                  },
+                  {
+                    "$toDouble": "$diamondSold"
+                  }
+                ]
+              }
+            },
+            "goodsBalance": {
+              "$sum": {
+                "$subtract": [
+                  {
+                    "$subtract": [
+                      {
+                        "$toDouble": "$goodsBought"
+                      },
+                      {
+                        "$toDouble": "$goodsSold"
+                      }
+                    ]
+                  },
+                  {
+                    "$toDouble": "$goodsTradeSum"
+                  }
+                ]
+              }
+            },
+            "volume": {
+              "$sum": {
+                "$subtract": [
+                  {
+                    "$subtract": [
+                      {
+                        "$toDouble": {
+                          "$subtract": [
+                            {
+                              "$toDouble": "$loanedRub"
+                            },
+                            {
+                              "$toDouble": "$repayedRub"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "$toDouble": "$goodsTradeSum"
+                      }
+                    ]
+                  },
+                  {
+                    "$toDouble": {
+                      "$add": [
+                        {
+                          "$toDouble": "$goldTradeSum"
+                        },
+                        {
+                          "$toDouble": "$silverTradeSum"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "totalPercentRecieved": {
+              "$sum": {
+                "$toDouble": "$percentRecieved"
+              }
+            }
+          }
+        },
+        {
+          "$project": {
+            "_id": 0,
+            "goldBalance": 1,
+            "silverBalance": 1,
+            "diamondsBalance": 1,
+            "goodsBalance": 1,
+            "volume": 1,
+            "totalPercentRecieved": 1
+          }
+        }
+      ],
+      "as": "report.balances"
+    }
+  },
+  {
+    "$unwind": {
+      "path": "$report.balances",
+      "preserveNullAndEmptyArrays": true
+    }
+  },
+  {
+    "$lookup": {
+      "from": "branch",
+      "localField": "report.branch",
+      "foreignField": "_id",
+      "as": "report.branch_info"
+    }
+  },
+  {
+    "$unwind": "$report.branch_info"
+  },
+  {
+    "$sort": {
+      "report.utc": 1
+    }
+  }
+]

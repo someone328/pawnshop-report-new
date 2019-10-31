@@ -1,0 +1,182 @@
+[
+  {
+    "$match": {
+      "branch": {
+        "$ne": null
+      },
+      "date": {
+        "$gte": 1546114400000,
+        "$lte": 1577750400000
+      }
+    }
+  },
+  {
+    "$lookup": {
+      "from": "report",
+      "let": {
+        "report_branch": "$branch",
+        "report_date": "$date"
+      },
+      "pipeline": [
+        {
+          "$match": {
+            "$expr": {
+              "$and": [
+                {
+                  "$eq": [
+                    "$branch",
+                    "$$report_branch"
+                  ]
+                },
+                {
+                  "$lt": [
+                    "$date",
+                    "$$report_date"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$sort": {
+            "date": -1
+          }
+        },
+        {
+          "$limit": 1
+        },
+        {
+          "$project": {
+            "_id": 0,
+            "cashboxEvening": 1
+          }
+        }
+      ],
+      "as": "cashboxMorning"
+    }
+  },
+  {
+    "$unwind": "$cashboxMorning"
+  },
+  {
+    "$project": {
+      "_id": 1,
+      "branch": 1,
+      "user": 1,
+      "date": 1,
+      "loanersPawned": 1,
+      "loanersBought": 1,
+      "loanedRub": 1,
+      "repayedRub": 1,
+      "percentRecieved": 1,
+      "goldBought": 1,
+      "goldSold": 1,
+      "silverBought": 1,
+      "silverSold": 1,
+      "diamondBought": 1,
+      "diamondSold": 1,
+      "goodsBought": 1,
+      "goodsSold": 1,
+      "cashboxEvening": 1,
+      "cashboxMorning": "$cashboxMorning.cashboxEvening",
+      "tradesActive": 1,
+      "goldTradeSum": 1,
+      "goldTradeWeight": 1,
+      "silverTradeSum": 1,
+      "silverTradeWeight": 1,
+      "diamondsTradeWeight": 1,
+      "goodsTradeSum": 1,
+      "expenses": 1,
+      "auctionAmount": 1,
+      "version": 1
+    }
+  },
+  {
+    "$sort": {
+      "branch": 1,
+      "date": 1
+    }
+  },
+  {
+    "$lookup": {
+      "from": "report",
+      "localField": "_id",
+      "foreignField": "_id",
+      "as": "report"
+    }
+  },
+  {
+    "$addFields": {
+      "report.cashboxMorning": "$cashboxMorning"
+    }
+  },
+  {
+    "$group": {
+      "_id": {
+        "branch": "$branch",
+        "month": {
+          "$month": {
+            "$toDate": "$date"
+          }
+        }
+      },
+      "documentCount": {
+        "$sum": 1
+      },
+      "reports": {
+        "$push": {
+          "$arrayElemAt": [
+            "$report",
+            0
+          ]
+        }
+      }
+    }
+  },
+  {
+    "$group": {
+      "_id": {
+        "branch": "$_id.branch"
+      },
+      "reportStatIndex": {
+        "$push": {
+          "month": "$_id.month",
+          "reports": "$reports"
+        }
+      }
+    }
+  },
+  {
+    "$unwind": "$reportStatIndex"
+  },
+  {
+    "$sort": {
+      "reportStatIndex.month": 1
+    }
+  },
+  {
+    "$group": {
+      "_id": "$_id",
+      "reportStatIndex": {
+        "$push": "$reportStatIndex"
+      }
+    }
+  },
+  {
+    "$lookup": {
+      "from": "branch",
+      "localField": "_id.branch",
+      "foreignField": "_id",
+      "as": "branchInfo"
+    }
+  },
+  {
+    "$unwind": "$branchInfo"
+  },
+  {
+    "$sort": {
+      "branchInfo.name": 1
+    }
+  }
+]
