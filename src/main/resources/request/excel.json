@@ -42,10 +42,17 @@
           "pawnersRate": {
             "$subtract": [
               {
-                "$toDouble": "$loanersPawned"
+                "$subtract": [
+                  {
+                    "$toDouble": "$loanersPawned"
+                  },
+                  {
+                    "$toDouble": "$loanersBought"
+                  }
+                ]
               },
               {
-                "$toDouble": "$loanersBought"
+                "$toDouble": "$tradesActive"
               }
             ]
           },
