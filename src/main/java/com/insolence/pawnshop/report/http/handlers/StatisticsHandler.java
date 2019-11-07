@@ -1,14 +1,6 @@
 package com.insolence.pawnshop.report.http.handlers;
 
 
-import com.insolence.pawnshop.report.domain.Report;
-import com.insolence.pawnshop.report.domain.ReportCalculations;
-import com.insolence.pawnshop.report.domain.StatisticReportForBranch;
-import com.insolence.pawnshop.report.domain.StatisticsReportForBranchRow;
-import com.insolence.pawnshop.report.util.Pair;
-import io.reactivex.Observable;
-import io.reactivex.Single;
-import io.reactivex.SingleSource;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonArray;
@@ -18,16 +10,8 @@ import io.vertx.reactivex.ext.mongo.MongoClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.ZoneId;
-import java.util.Date;
-
 import static com.insolence.pawnshop.report.util.DateUtils.getFirstMomentOfYear;
 import static com.insolence.pawnshop.report.util.DateUtils.getLastMomentOfYear;
-import static com.insolence.pawnshop.report.verticles.CalculateDynamicsVerticle.DYNAMICS_CALCULATIONS;
 
 @Slf4j
 public class StatisticsHandler implements Handler<RoutingContext> {
@@ -56,8 +40,18 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "          \"$match\": {\n" +
                     "            \"$expr\": {\n" +
                     "              \"$and\": [\n" +
-                    "                {\"$eq\": [\"$branch\",\"$$report_branch\"]},\n" +
-                    "                {\"$lte\": [\"$date\",\"$$report_date\"]}\n" +
+                    "                {\n" +
+                    "                  \"$eq\": [\n" +
+                    "                    \"$branch\",\n" +
+                    "                    \"$$report_branch\"\n" +
+                    "                  ]\n" +
+                    "                },\n" +
+                    "                {\n" +
+                    "                  \"$lte\": [\n" +
+                    "                    \"$date\",\n" +
+                    "                    \"$$report_date\"\n" +
+                    "                  ]\n" +
+                    "                }\n" +
                     "              ]\n" +
                     "            }\n" +
                     "          }\n" +
@@ -442,14 +436,25 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "        \"report_date\": \"$monthMinDate\"\n" +
                     "      },\n" +
                     "      \"pipeline\": [\n" +
-                    "        {\"$match\": {\n" +
-                    "          \"$expr\": {\n" +
-                    "            \"$and\": [\n" +
-                    "              {\"$eq\": [\"$branch\",\"$$report_branch\"]},\n" +
-                    "              {\"$lt\": [\"$date\",\"$$report_date\"]}\n" +
-                    "            ]\n" +
+                    "        {\n" +
+                    "          \"$match\": {\n" +
+                    "            \"$expr\": {\n" +
+                    "              \"$and\": [\n" +
+                    "                {\n" +
+                    "                  \"$eq\": [\n" +
+                    "                    \"$branch\",\n" +
+                    "                    \"$$report_branch\"\n" +
+                    "                  ]\n" +
+                    "                },\n" +
+                    "                {\n" +
+                    "                  \"$lt\": [\n" +
+                    "                    \"$date\",\n" +
+                    "                    \"$$report_date\"\n" +
+                    "                  ]\n" +
+                    "                }\n" +
+                    "              ]\n" +
+                    "            }\n" +
                     "          }\n" +
-                    "        }\n" +
                     "        },\n" +
                     "        {\n" +
                     "          \"$group\": {\n" +
@@ -500,7 +505,22 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "                        }\n" +
                     "                      },\n" +
                     "                      {\n" +
-                    "                        \"$sum\": {\"$convert\": {\"input\": \"$goodsTradeSum\",\"to\": \"double\",\"onError\": 0,\"onNull\": 0}}}]}]}}}},\n" +
+                    "                        \"$sum\": {\n" +
+                    "                          \"$convert\": {\n" +
+                    "                            \"input\": \"$goodsTradeSum\",\n" +
+                    "                            \"to\": \"double\",\n" +
+                    "                            \"onError\": 0,\n" +
+                    "                            \"onNull\": 0\n" +
+                    "                          }\n" +
+                    "                        }\n" +
+                    "                      }\n" +
+                    "                    ]\n" +
+                    "                  }\n" +
+                    "                ]\n" +
+                    "              }\n" +
+                    "            }\n" +
+                    "          }\n" +
+                    "        },\n" +
                     "        {\n" +
                     "          \"$project\": {\n" +
                     "            \"_id\": 0,\n" +
@@ -520,15 +540,31 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "        \"maxDate\": \"$monthMaxDate\"\n" +
                     "      },\n" +
                     "      \"pipeline\": [\n" +
-                    "        {\"$match\": {\n" +
-                    "          \"$expr\": {\n" +
-                    "            \"$and\": [\n" +
-                    "              {\"$eq\": [\"$branch\",\"$$report_branch\"]},\n" +
-                    "              {\"$lte\": [\"$date\",\"$$maxDate\"]},\n" +
-                    "              {\"$gte\": [\"$date\",\"$$minDate\"]}\n" +
-                    "            ]\n" +
+                    "        {\n" +
+                    "          \"$match\": {\n" +
+                    "            \"$expr\": {\n" +
+                    "              \"$and\": [\n" +
+                    "                {\n" +
+                    "                  \"$eq\": [\n" +
+                    "                    \"$branch\",\n" +
+                    "                    \"$$report_branch\"\n" +
+                    "                  ]\n" +
+                    "                },\n" +
+                    "                {\n" +
+                    "                  \"$lte\": [\n" +
+                    "                    \"$date\",\n" +
+                    "                    \"$$maxDate\"\n" +
+                    "                  ]\n" +
+                    "                },\n" +
+                    "                {\n" +
+                    "                  \"$gte\": [\n" +
+                    "                    \"$date\",\n" +
+                    "                    \"$$minDate\"\n" +
+                    "                  ]\n" +
+                    "                }\n" +
+                    "              ]\n" +
+                    "            }\n" +
                     "          }\n" +
-                    "        }\n" +
                     "        },\n" +
                     "        {\n" +
                     "          \"$group\": {\n" +
@@ -646,31 +682,31 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "  },\n" +
                     "  {\n" +
                     "    \"$unwind\": {\n" +
-                    "      \"path\":\"$cashboxMorning\",\n" +
+                    "      \"path\": \"$cashboxMorning\",\n" +
                     "      \"preserveNullAndEmptyArrays\": true\n" +
                     "    }\n" +
                     "  },\n" +
                     "  {\n" +
                     "    \"$unwind\": {\n" +
-                    "      \"path\":\"$cashboxEvening\",\n" +
+                    "      \"path\": \"$cashboxEvening\",\n" +
                     "      \"preserveNullAndEmptyArrays\": true\n" +
                     "    }\n" +
                     "  },\n" +
                     "  {\n" +
                     "    \"$unwind\": {\n" +
-                    "      \"path\":\"$monthTradeBalance1\",\n" +
+                    "      \"path\": \"$monthTradeBalance1\",\n" +
                     "      \"preserveNullAndEmptyArrays\": true\n" +
                     "    }\n" +
                     "  },\n" +
                     "  {\n" +
                     "    \"$unwind\": {\n" +
-                    "      \"path\":\"$auctionAmount1\",\n" +
+                    "      \"path\": \"$auctionAmount1\",\n" +
                     "      \"preserveNullAndEmptyArrays\": true\n" +
                     "    }\n" +
                     "  },\n" +
                     "  {\n" +
                     "    \"$unwind\": {\n" +
-                    "      \"path\":\"$startBasket1\",\n" +
+                    "      \"path\": \"$startBasket1\",\n" +
                     "      \"preserveNullAndEmptyArrays\": true\n" +
                     "    }\n" +
                     "  },\n" +
@@ -791,13 +827,18 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "              2\n" +
                     "            ]\n" +
                     "          },\n" +
-                    "          \"monthTradeBalance\":\"$monthTradeBalance\",\n" +
+                    "          \"monthTradeBalance\": \"$monthTradeBalance\",\n" +
                     "          \"monthTradeSum\": \"$monthTradeSum\",\n" +
                     "          \"tradeIncome\": \"$tradeIncome\",\n" +
                     "          \"cashboxStartMorning\": \"$cashboxStartMorning\",\n" +
                     "          \"cashboxEndMorning\": \"$cashboxEndMorning\",\n" +
-                    "          \"endBasket\":\"$endBasket\",\n" +
-                    "          \"startBasket\":{\"$ifNull\":[\"$startBasket\",0]}\n" +
+                    "          \"endBasket\": \"$endBasket\",\n" +
+                    "          \"startBasket\": {\n" +
+                    "            \"$ifNull\": [\n" +
+                    "              \"$startBasket\",\n" +
+                    "              0\n" +
+                    "            ]\n" +
+                    "          }\n" +
                     "        }\n" +
                     "      }\n" +
                     "    }\n" +
@@ -810,11 +851,15 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "      \"as\": \"branchInfo\"\n" +
                     "    }\n" +
                     "  },\n" +
-                    "  {\"$unwind\":\"$branchInfo\"},\n" +
-                    "  {\"$sort\":{\"branchInfo.name\":1}}\n" +
-                    "\n" +
-                    "]";
-    private static final BigDecimal goldBySilverContentDivision = new BigDecimal(999.9).divide(new BigDecimal(585.0), 4, RoundingMode.HALF_UP);
+                    "  {\n" +
+                    "    \"$unwind\": \"$branchInfo\"\n" +
+                    "  },\n" +
+                    "  {\n" +
+                    "    \"$sort\": {\n" +
+                    "      \"branchInfo.name\": 1\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "]\n";
     private EventBus bus;
 
     private MongoClient client;
@@ -837,127 +882,11 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                 .toObservable()
                 .reduce(new JsonArray(), (arr, br) -> arr.add(JsonObject.mapFrom(br)))
                 .subscribe(
-                        success -> {
-                            rc.response()
-                                    .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
-                                    .setChunked(true)
-                                    .end(success.encodePrettily());
-                        },
-                        error -> log.error("", error)
+                        success -> rc.response()
+                                .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
+                                .setChunked(true)
+                                .end(success.encodePrettily()),
+                        error -> log.error("Что-то пошло не так во время расчёта статистики", error)
                 );
-//        client.aggregate(CrudHandler.SupportedObjectTypes.REPORT.name().toLowerCase(), pipeline)
-//                .toObservable()
-//                .map(json -> {
-//                    var branchReport = new StatisticReportForBranch();
-//                    branchReport.setBranchInfo(json.getJsonObject("branchInfo").mapTo(BranchInfo.class));
-//                    return Pair.of(branchReport, json.getJsonArray("reportStatIndex"));
-//                })
-//                .concatMapSingle(pair ->
-//                        Observable.fromIterable(pair.getRight())
-//                                .map(e -> (JsonObject) e)
-//                                .concatMapSingle(month ->
-//                                        Observable.fromIterable(month.getJsonArray("reports"))
-//                                                .map(x -> ((JsonObject) x).mapTo(Report.class))
-//                                                .reduceWith(StatisticsReportForBranchRow::new, (row, report) -> {
-//                                                    JsonObject firstReportInMonth = (JsonObject) Observable.fromIterable(month.getJsonArray("reports")).blockingFirst();
-//                                                    row.setMonthNum(month.getInteger("month"));
-//                                                    row.setMonthlyVolumeSum(row.getMonthlyVolumeSum().add(noNull(report.getVolume())));
-//                                                    row.setMonthTradeSum(row.getMonthTradeSum().add(noNull(report.getAuctionAmount())));
-//                                                    row.setCashboxStartMorning(firstReportInMonth.mapTo(Report.class).getCashboxMorning());
-//                                                    row.setCashboxEndMorning(report.getCashboxEvening());
-//                                                    row.setMonthLoanRub(row.getMonthLoanRub().add(noNull(report.getLoanedRub())));
-//                                                    row.setMonthRepayRub(row.getMonthRepayRub().add(noNull(report.getRepayedRub())));
-//                                                    row.setMonthExpenses(row.getMonthExpenses().add(noNull(report.getExpensesSum())));
-//                                                    //
-//                                                    row.setMonthGoldTradeSum(row.getMonthGoldTradeSum().add(noNull(report.getGoldTradeSum())));
-//                                                    row.setMonthGoldTradeWeight(row.getMonthGoldTradeWeight().add(noNull(report.getGoldTradeWeight())));
-//                                                    row.setMonthSilverTradeSum(row.getMonthSilverTradeSum().add(noNull(report.getSilverTradeSum())));
-//                                                    row.setMonthSilverTradeWeight(row.getMonthSilverTradeWeight().add(noNull(report.getSilverTradeWeight())));
-//                                                    row.setMonthlyGoodsTradeSum(row.getMonthlyGoodsTradeSum().add(noNull(report.getGoodsTradeSum())));
-//                                                    row.setLastReport(report);
-//                                                    return row;
-//                                                })
-//                                )
-//                                //don`t move this rows upper. They must be executed after all calculations
-//                                .map(this::calculateMonthTradeBalance)
-//                                .map(this::calculateTradeIncome)
-//                                .concatMapSingle(row -> calculateStartBasket(row, pair.getLeft()))
-//                                .concatMapSingle(row -> calculateEndBasket(row, pair.getLeft()))
-//                                .concatMapSingle(row -> calculateMonthAverageBasket(row, pair))
-//                                .reduceWith(pair::getLeft, (yearReport, monthReport) -> {
-//                                    yearReport.getMonthlyReports().add(monthReport);
-//                                    return yearReport;
-//                                })
-//                )
-//                .reduce(new JsonArray(), (arr, br) -> arr.add(JsonObject.mapFrom(br)))
-//                .subscribe(
-//                        success -> rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8").end(success.encodePrettily()),
-//                        error -> log.error("", error)
-//                );
-    }
-
-    private SingleSource<? extends StatisticsReportForBranchRow> calculateMonthAverageBasket(StatisticsReportForBranchRow row, Pair<StatisticReportForBranch, JsonArray> pair) {
-        Observable<BigDecimal> volumes = Observable.fromIterable(pair.getRight())
-                .filter(month -> ((JsonObject) month).getInteger("month") == row.getMonthNum())
-                .concatMap(month -> Observable.fromIterable(((JsonObject) month).getJsonArray("reports")))
-                .map(x -> ((JsonObject) x).mapTo(Report.class))
-                .filter(report -> report.getBranch().equals(pair.getLeft().getBranchInfo().get_id()))
-                .map(Report::getBalancedVolume);
-        return volumes.startWith(row.getStartBasket())
-                .scan(BigDecimal::add)
-                .reduceWith(() -> BigDecimal.ZERO, BigDecimal::add)
-                .map(summ -> {
-                    row.setMonthAverageBasket(summ.subtract(row.getStartBasket())
-                            .divide(new BigDecimal(getNumberOfDays(new Date(row.getLastReport().getDate()))), 2, RoundingMode.HALF_UP));
-                    return row;
-                });
-    }
-
-    private int getNumberOfDays(Date date) {
-        YearMonth yearMonth = YearMonth.of(date.getYear(), date.getMonth() + 1);
-        return yearMonth.lengthOfMonth();
-    }
-
-    private StatisticsReportForBranchRow calculateTradeIncome(StatisticsReportForBranchRow row) {
-        row.setTradeIncome(row.getMonthTradeBalance().subtract(row.getMonthTradeSum()));
-        return row;
-    }
-
-    private Single<StatisticsReportForBranchRow> calculateStartBasket(StatisticsReportForBranchRow row, StatisticReportForBranch report) {
-        long currentMonthFirstDay = LocalDate.now().withMonth(row.getMonthNum()).withDayOfMonth(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
-        return requestCalculationsFor(report, currentMonthFirstDay)
-                .map(calcs -> {
-                    row.setStartBasket(calcs.getVolume());
-                    return row;
-                });
-    }
-
-    private Single<StatisticsReportForBranchRow> calculateEndBasket(StatisticsReportForBranchRow row, StatisticReportForBranch report) {
-        long nextMonthFirstDay = LocalDate.now().withMonth(row.getMonthNum()).plusMonths(1).withDayOfMonth(1).atStartOfDay().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
-        return requestCalculationsFor(report, nextMonthFirstDay)
-                .map(calcs -> {
-                    row.setEndBasket(calcs.getVolume());
-                    return row;
-                });
-    }
-
-    private Single<ReportCalculations> requestCalculationsFor(StatisticReportForBranch report, long nextMonthFirstDay) {
-        return bus.<String>rxRequest(DYNAMICS_CALCULATIONS, new JsonObject().put("branchId", report.getBranchInfo().get_id()).put("reportDate", nextMonthFirstDay + ""))
-                .map(resp -> new JsonObject(resp.body()).mapTo(ReportCalculations.class));
-    }
-
-    /*private StatisticsReportForBranchRow calculateMonthAverageBasket(StatisticsReportForBranchRow row) {
-        row.setMonthAverageBasket(row.getMonthlyVolumeSum()
-                .divide(new BigDecimal(30), 2, RoundingMode.HALF_UP)
-        );
-        return row;
-    }*/
-
-    private StatisticsReportForBranchRow calculateMonthTradeBalance(StatisticsReportForBranchRow row) {
-        row.setMonthTradeBalance(
-                row.getMonthGoldTradeSum()
-                        .add(row.getMonthSilverTradeSum())
-                        .add(row.getMonthlyGoodsTradeSum()));
-        return row;
     }
 }
