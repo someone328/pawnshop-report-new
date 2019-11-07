@@ -23,8 +23,8 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "        \"$ne\": null\n" +
                     "      },\n" +
                     "      \"date\": {\n" +
-                    "        \"$gte\": 1546300800000,\n" +
-                    "        \"$lte\": 1577750400000\n" +
+                    "        \"$gte\": %s,\n" +
+                    "        \"$lte\": %s\n" +
                     "      }\n" +
                     "    }\n" +
                     "  },\n" +
