@@ -37,8 +37,18 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "          \"$match\": {\n" +
                     "            \"$expr\": {\n" +
                     "              \"$and\": [\n" +
-                    "                {\"$eq\": [\"$branch\",\"$$report_branch\"]},\n" +
-                    "                {\"$lte\": [\"$date\",\"$$report_date\"]}\n" +
+                    "                {\n" +
+                    "                  \"$eq\": [\n" +
+                    "                    \"$branch\",\n" +
+                    "                    \"$$report_branch\"\n" +
+                    "                  ]\n" +
+                    "                },\n" +
+                    "                {\n" +
+                    "                  \"$lte\": [\n" +
+                    "                    \"$date\",\n" +
+                    "                    \"$$report_date\"\n" +
+                    "                  ]\n" +
+                    "                }\n" +
                     "              ]\n" +
                     "            }\n" +
                     "          }\n" +
@@ -212,7 +222,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "  },\n" +
                     "  {\n" +
                     "    \"$unwind\": {\n" +
-                    "      \"path\":\"$cashboxMorning\",\n" +
+                    "      \"path\": \"$cashboxMorning\",\n" +
                     "      \"preserveNullAndEmptyArrays\": true\n" +
                     "    }\n" +
                     "  },\n" +
@@ -271,7 +281,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "  },\n" +
                     "  {\n" +
                     "    \"$unwind\": {\n" +
-                    "      \"path\":\"$cashboxEvening\",\n" +
+                    "      \"path\": \"$cashboxEvening\",\n" +
                     "      \"preserveNullAndEmptyArrays\": true\n" +
                     "    }\n" +
                     "  },\n" +
@@ -371,6 +381,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "        {\n" +
                     "          \"$project\": {\n" +
                     "            \"_id\": 0,\n" +
+                    "            \"monthTradeBalance\": 1,\n" +
                     "            \"endBasket\": 1\n" +
                     "          }\n" +
                     "        }\n" +
@@ -380,7 +391,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "  },\n" +
                     "  {\n" +
                     "    \"$unwind\": {\n" +
-                    "      \"path\":\"$monthTradeBalance1\",\n" +
+                    "      \"path\": \"$monthTradeBalance1\",\n" +
                     "      \"preserveNullAndEmptyArrays\": true\n" +
                     "    }\n" +
                     "  },\n" +
@@ -392,14 +403,25 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "        \"report_date\": \"$monthMinDate\"\n" +
                     "      },\n" +
                     "      \"pipeline\": [\n" +
-                    "        {\"$match\": {\n" +
-                    "          \"$expr\": {\n" +
-                    "            \"$and\": [\n" +
-                    "              {\"$eq\": [\"$branch\",\"$$report_branch\"]},\n" +
-                    "              {\"$lt\": [\"$date\",\"$$report_date\"]}\n" +
-                    "            ]\n" +
+                    "        {\n" +
+                    "          \"$match\": {\n" +
+                    "            \"$expr\": {\n" +
+                    "              \"$and\": [\n" +
+                    "                {\n" +
+                    "                  \"$eq\": [\n" +
+                    "                    \"$branch\",\n" +
+                    "                    \"$$report_branch\"\n" +
+                    "                  ]\n" +
+                    "                },\n" +
+                    "                {\n" +
+                    "                  \"$lt\": [\n" +
+                    "                    \"$date\",\n" +
+                    "                    \"$$report_date\"\n" +
+                    "                  ]\n" +
+                    "                }\n" +
+                    "              ]\n" +
+                    "            }\n" +
                     "          }\n" +
-                    "        }\n" +
                     "        },\n" +
                     "        {\n" +
                     "          \"$group\": {\n" +
@@ -450,7 +472,22 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "                        }\n" +
                     "                      },\n" +
                     "                      {\n" +
-                    "                        \"$sum\": {\"$convert\": {\"input\": \"$goodsTradeSum\",\"to\": \"double\",\"onError\": 0,\"onNull\": 0}}}]}]}}}},\n" +
+                    "                        \"$sum\": {\n" +
+                    "                          \"$convert\": {\n" +
+                    "                            \"input\": \"$goodsTradeSum\",\n" +
+                    "                            \"to\": \"double\",\n" +
+                    "                            \"onError\": 0,\n" +
+                    "                            \"onNull\": 0\n" +
+                    "                          }\n" +
+                    "                        }\n" +
+                    "                      }\n" +
+                    "                    ]\n" +
+                    "                  }\n" +
+                    "                ]\n" +
+                    "              }\n" +
+                    "            }\n" +
+                    "          }\n" +
+                    "        },\n" +
                     "        {\n" +
                     "          \"$project\": {\n" +
                     "            \"_id\": 0,\n" +
@@ -463,7 +500,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "  },\n" +
                     "  {\n" +
                     "    \"$unwind\": {\n" +
-                    "      \"path\":\"$startBasket1\",\n" +
+                    "      \"path\": \"$startBasket1\",\n" +
                     "      \"preserveNullAndEmptyArrays\": true\n" +
                     "    }\n" +
                     "  },\n" +
@@ -476,15 +513,31 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "        \"maxDate\": \"$monthMaxDate\"\n" +
                     "      },\n" +
                     "      \"pipeline\": [\n" +
-                    "        {\"$match\": {\n" +
-                    "          \"$expr\": {\n" +
-                    "            \"$and\": [\n" +
-                    "              {\"$eq\": [\"$branch\",\"$$report_branch\"]},\n" +
-                    "              {\"$lte\": [\"$date\",\"$$maxDate\"]},\n" +
-                    "              {\"$gte\": [\"$date\",\"$$minDate\"]}\n" +
-                    "            ]\n" +
+                    "        {\n" +
+                    "          \"$match\": {\n" +
+                    "            \"$expr\": {\n" +
+                    "              \"$and\": [\n" +
+                    "                {\n" +
+                    "                  \"$eq\": [\n" +
+                    "                    \"$branch\",\n" +
+                    "                    \"$$report_branch\"\n" +
+                    "                  ]\n" +
+                    "                },\n" +
+                    "                {\n" +
+                    "                  \"$lte\": [\n" +
+                    "                    \"$date\",\n" +
+                    "                    \"$$maxDate\"\n" +
+                    "                  ]\n" +
+                    "                },\n" +
+                    "                {\n" +
+                    "                  \"$gte\": [\n" +
+                    "                    \"$date\",\n" +
+                    "                    \"$$minDate\"\n" +
+                    "                  ]\n" +
+                    "                }\n" +
+                    "              ]\n" +
+                    "            }\n" +
                     "          }\n" +
-                    "        }\n" +
                     "        },\n" +
                     "        {\n" +
                     "          \"$group\": {\n" +
@@ -537,47 +590,35 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "            },\n" +
                     "            \"monthTradeBalance\": {\n" +
                     "              \"$sum\": {\n" +
-                    "                \"$subtract\": [\n" +
+                    "                \"$add\": [\n" +
                     "                  {\n" +
-                    "                    \"$add\": [\n" +
-                    "                      {\n" +
-                    "                        \"$sum\": {\n" +
-                    "                          \"$convert\": {\n" +
-                    "                            \"input\": \"$goldTradeSum\",\n" +
-                    "                            \"to\": \"double\",\n" +
-                    "                            \"onError\": 0,\n" +
-                    "                            \"onNull\": 0\n" +
-                    "                          }\n" +
-                    "                        }\n" +
-                    "                      },\n" +
-                    "                      {\n" +
-                    "                        \"$sum\": {\n" +
-                    "                          \"$convert\": {\n" +
-                    "                            \"input\": \"$silverTradeSum\",\n" +
-                    "                            \"to\": \"double\",\n" +
-                    "                            \"onError\": 0,\n" +
-                    "                            \"onNull\": 0\n" +
-                    "                          }\n" +
-                    "                        }\n" +
-                    "                      },\n" +
-                    "                      {\n" +
-                    "                        \"$sum\": {\n" +
-                    "                          \"$convert\": {\n" +
-                    "                            \"input\": \"$goodsTradeSum\",\n" +
-                    "                            \"to\": \"double\",\n" +
-                    "                            \"onError\": 0,\n" +
-                    "                            \"onNull\": 0\n" +
-                    "                          }\n" +
-                    "                        }\n" +
+                    "                    \"$sum\": {\n" +
+                    "                      \"$convert\": {\n" +
+                    "                        \"input\": \"$goldTradeSum\",\n" +
+                    "                        \"to\": \"double\",\n" +
+                    "                        \"onError\": 0,\n" +
+                    "                        \"onNull\": 0\n" +
                     "                      }\n" +
-                    "                    ]\n" +
+                    "                    }\n" +
                     "                  },\n" +
                     "                  {\n" +
-                    "                    \"$convert\": {\n" +
-                    "                      \"input\": \"$auctionAmount\",\n" +
-                    "                      \"to\": \"double\",\n" +
-                    "                      \"onError\": 0,\n" +
-                    "                      \"onNull\": 0\n" +
+                    "                    \"$sum\": {\n" +
+                    "                      \"$convert\": {\n" +
+                    "                        \"input\": \"$silverTradeSum\",\n" +
+                    "                        \"to\": \"double\",\n" +
+                    "                        \"onError\": 0,\n" +
+                    "                        \"onNull\": 0\n" +
+                    "                      }\n" +
+                    "                    }\n" +
+                    "                  },\n" +
+                    "                  {\n" +
+                    "                    \"$sum\": {\n" +
+                    "                      \"$convert\": {\n" +
+                    "                        \"input\": \"$goodsTradeSum\",\n" +
+                    "                        \"to\": \"double\",\n" +
+                    "                        \"onError\": 0,\n" +
+                    "                        \"onNull\": 0\n" +
+                    "                      }\n" +
                     "                    }\n" +
                     "                  }\n" +
                     "                ]\n" +
@@ -600,16 +641,12 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "      \"as\": \"auctionAmount1\"\n" +
                     "    }\n" +
                     "  },\n" +
-                    "\n" +
-                    "\n" +
-                    "\n" +
                     "  {\n" +
                     "    \"$unwind\": {\n" +
-                    "      \"path\":\"$auctionAmount1\",\n" +
+                    "      \"path\": \"$auctionAmount1\",\n" +
                     "      \"preserveNullAndEmptyArrays\": true\n" +
                     "    }\n" +
                     "  },\n" +
-                    "\n" +
                     "  {\n" +
                     "    \"$project\": {\n" +
                     "      \"_id\": 0,\n" +
@@ -680,7 +717,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "          }\n" +
                     "        ]\n" +
                     "      },\n" +
-                    "      \"monthTradeBalance\": \"$auctionAmount1.monthTradeBalance\",\n" +
+                    "      \"monthTradeBalance\": \"$monthTradeBalance1.monthTradeBalance\",\n" +
                     "      \"monthTradeSum\": \"$auctionAmount1.monthTradeSum\",\n" +
                     "      \"tradeIncome\": \"$auctionAmount1.auctionAmount\",\n" +
                     "      \"cashboxStartMorning\": {\n" +
@@ -727,13 +764,18 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "              2\n" +
                     "            ]\n" +
                     "          },\n" +
-                    "          \"monthTradeBalance\":\"$monthTradeBalance\",\n" +
+                    "          \"monthTradeBalance\": \"$monthTradeBalance\",\n" +
                     "          \"monthTradeSum\": \"$monthTradeSum\",\n" +
                     "          \"tradeIncome\": \"$tradeIncome\",\n" +
                     "          \"cashboxStartMorning\": \"$cashboxStartMorning\",\n" +
                     "          \"cashboxEndMorning\": \"$cashboxEndMorning\",\n" +
-                    "          \"endBasket\":\"$endBasket\",\n" +
-                    "          \"startBasket\":{\"$ifNull\":[\"$startBasket\",0]}\n" +
+                    "          \"endBasket\": \"$endBasket\",\n" +
+                    "          \"startBasket\": {\n" +
+                    "            \"$ifNull\": [\n" +
+                    "              \"$startBasket\",\n" +
+                    "              0\n" +
+                    "            ]\n" +
+                    "          }\n" +
                     "        }\n" +
                     "      }\n" +
                     "    }\n" +
@@ -746,8 +788,14 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "      \"as\": \"branchInfo\"\n" +
                     "    }\n" +
                     "  },\n" +
-                    "  {\"$unwind\":\"$branchInfo\"},\n" +
-                    "  {\"$sort\":{\"branchInfo.name\":1}}\n" +
+                    "  {\n" +
+                    "    \"$unwind\": \"$branchInfo\"\n" +
+                    "  },\n" +
+                    "  {\n" +
+                    "    \"$sort\": {\n" +
+                    "      \"branchInfo.name\": 1\n" +
+                    "    }\n" +
+                    "  }\n" +
                     "]\n";
     private EventBus bus;
 
