@@ -661,7 +661,6 @@
       },
       "monthTradeBalance": "$auctionAmount1.monthTradeBalance",
       "monthTradeSum": "$auctionAmount1.auctionAmount",
-      "tradeIncome": "$auctionAmount1.auctionAmount",
       "cashboxStartMorning": {
         "$convert": {
           "input": "$cashboxMorning.cashboxMorning",
@@ -708,7 +707,6 @@
           },
           "monthTradeBalance": "$monthTradeBalance",
           "monthTradeSum": "$monthTradeSum",
-          "tradeIncome": "$tradeIncome",
           "cashboxStartMorning": "$cashboxStartMorning",
           "cashboxEndMorning": "$cashboxEndMorning",
           "endBasket": "$endBasket",

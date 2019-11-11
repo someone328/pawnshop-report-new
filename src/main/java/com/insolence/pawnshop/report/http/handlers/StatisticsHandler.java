@@ -380,7 +380,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "        },\n" +
                     "        {\n" +
                     "          \"$project\": {\n" +
-                    "            \"_id\": 0,            \n" +
+                    "            \"_id\": 0,\n" +
                     "            \"endBasket\": 1\n" +
                     "          }\n" +
                     "        }\n" +
@@ -679,7 +679,6 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "      },\n" +
                     "      \"monthTradeBalance\": \"$auctionAmount1.monthTradeBalance\",\n" +
                     "      \"monthTradeSum\": \"$auctionAmount1.auctionAmount\",\n" +
-                    "      \"tradeIncome\": \"$auctionAmount1.auctionAmount\",\n" +
                     "      \"cashboxStartMorning\": {\n" +
                     "        \"$convert\": {\n" +
                     "          \"input\": \"$cashboxMorning.cashboxMorning\",\n" +
@@ -726,7 +725,6 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "          },\n" +
                     "          \"monthTradeBalance\": \"$monthTradeBalance\",\n" +
                     "          \"monthTradeSum\": \"$monthTradeSum\",\n" +
-                    "          \"tradeIncome\": \"$tradeIncome\",\n" +
                     "          \"cashboxStartMorning\": \"$cashboxStartMorning\",\n" +
                     "          \"cashboxEndMorning\": \"$cashboxEndMorning\",\n" +
                     "          \"endBasket\": \"$endBasket\",\n" +
