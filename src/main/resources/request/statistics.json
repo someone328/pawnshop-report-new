@@ -1,12 +1,9 @@
 [
   {
     "$match": {
-      "branch": {
-        "$ne": null
-      },
       "date": {
         "$gte": 1546300800000,
-        "$lte": 1577750400000
+        "$lte": 1577836799999
       }
     }
   },
@@ -22,18 +19,8 @@
           "$match": {
             "$expr": {
               "$and": [
-                {
-                  "$eq": [
-                    "$branch",
-                    "$$report_branch"
-                  ]
-                },
-                {
-                  "$lte": [
-                    "$date",
-                    "$$report_date"
-                  ]
-                }
+                {"$eq": ["$branch","$$report_branch"]},
+                {"$lte": ["$date","$$report_date"]}
               ]
             }
           }
@@ -206,6 +193,12 @@
     }
   },
   {
+    "$unwind": {
+      "path":"$cashboxMorning",
+      "preserveNullAndEmptyArrays": true
+    }
+  },
+  {
     "$lookup": {
       "from": "report",
       "let": {
@@ -259,6 +252,12 @@
     }
   },
   {
+    "$unwind": {
+      "path":"$cashboxEvening",
+      "preserveNullAndEmptyArrays": true
+    }
+  },
+  {
     "$lookup": {
       "from": "report",
       "let": {
@@ -289,54 +288,6 @@
         {
           "$group": {
             "_id": "branch",
-            "monthTradeBalance": {
-              "$sum": {
-                "$subtract": [
-                  {
-                    "$add": [
-                      {
-                        "$sum": {
-                          "$convert": {
-                            "input": "$goldTradeSum",
-                            "to": "double",
-                            "onError": 0,
-                            "onNull": 0
-                          }
-                        }
-                      },
-                      {
-                        "$sum": {
-                          "$convert": {
-                            "input": "$silverTradeSum",
-                            "to": "double",
-                            "onError": 0,
-                            "onNull": 0
-                          }
-                        }
-                      },
-                      {
-                        "$sum": {
-                          "$convert": {
-                            "input": "$goodsTradeSum",
-                            "to": "double",
-                            "onError": 0,
-                            "onNull": 0
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "$convert": {
-                      "input": "$auctionAmount",
-                      "to": "double",
-                      "onError": 0,
-                      "onNull": 0
-                    }
-                  }
-                ]
-              }
-            },
             "endBasket": {
               "$sum": {
                 "$subtract": [
@@ -402,12 +353,17 @@
         {
           "$project": {
             "_id": 0,
-            "monthTradeBalance": 1,
             "endBasket": 1
           }
         }
       ],
       "as": "monthTradeBalance1"
+    }
+  },
+  {
+    "$unwind": {
+      "path":"$monthTradeBalance1",
+      "preserveNullAndEmptyArrays": true
     }
   },
   {
@@ -418,25 +374,14 @@
         "report_date": "$monthMinDate"
       },
       "pipeline": [
-        {
-          "$match": {
-            "$expr": {
-              "$and": [
-                {
-                  "$eq": [
-                    "$branch",
-                    "$$report_branch"
-                  ]
-                },
-                {
-                  "$lt": [
-                    "$date",
-                    "$$report_date"
-                  ]
-                }
-              ]
-            }
+        {"$match": {
+          "$expr": {
+            "$and": [
+              {"$eq": ["$branch","$$report_branch"]},
+              {"$lt": ["$date","$$report_date"]}
+            ]
           }
+        }
         },
         {
           "$group": {
@@ -487,22 +432,7 @@
                         }
                       },
                       {
-                        "$sum": {
-                          "$convert": {
-                            "input": "$goodsTradeSum",
-                            "to": "double",
-                            "onError": 0,
-                            "onNull": 0
-                          }
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-          }
-        },
+                        "$sum": {"$convert": {"input": "$goodsTradeSum","to": "double","onError": 0,"onNull": 0}}}]}]}}}},
         {
           "$project": {
             "_id": 0,
@@ -514,6 +444,12 @@
     }
   },
   {
+    "$unwind": {
+      "path":"$startBasket1",
+      "preserveNullAndEmptyArrays": true
+    }
+  },
+  {
     "$lookup": {
       "from": "report",
       "let": {
@@ -522,31 +458,15 @@
         "maxDate": "$monthMaxDate"
       },
       "pipeline": [
-        {
-          "$match": {
-            "$expr": {
-              "$and": [
-                {
-                  "$eq": [
-                    "$branch",
-                    "$$report_branch"
-                  ]
-                },
-                {
-                  "$lte": [
-                    "$date",
-                    "$$maxDate"
-                  ]
-                },
-                {
-                  "$gte": [
-                    "$date",
-                    "$$minDate"
-                  ]
-                }
-              ]
-            }
+        {"$match": {
+          "$expr": {
+            "$and": [
+              {"$eq": ["$branch","$$report_branch"]},
+              {"$lte": ["$date","$$maxDate"]},
+              {"$gte": ["$date","$$minDate"]}
+            ]
           }
+        }
         },
         {
           "$group": {
@@ -662,36 +582,16 @@
       "as": "auctionAmount1"
     }
   },
+
+
+
   {
     "$unwind": {
-      "path": "$cashboxMorning",
+      "path":"$auctionAmount1",
       "preserveNullAndEmptyArrays": true
     }
   },
-  {
-    "$unwind": {
-      "path": "$cashboxEvening",
-      "preserveNullAndEmptyArrays": true
-    }
-  },
-  {
-    "$unwind": {
-      "path": "$monthTradeBalance1",
-      "preserveNullAndEmptyArrays": true
-    }
-  },
-  {
-    "$unwind": {
-      "path": "$auctionAmount1",
-      "preserveNullAndEmptyArrays": true
-    }
-  },
-  {
-    "$unwind": {
-      "path": "$startBasket1",
-      "preserveNullAndEmptyArrays": true
-    }
-  },
+
   {
     "$project": {
       "_id": 0,
@@ -762,7 +662,7 @@
           }
         ]
       },
-      "monthTradeBalance": "$monthTradeBalance1.monthTradeBalance",
+      "monthTradeBalance": "$auctionAmount1.monthTradeBalance",
       "monthTradeSum": "$auctionAmount1.monthTradeSum",
       "tradeIncome": "$auctionAmount1.auctionAmount",
       "cashboxStartMorning": {
@@ -809,18 +709,13 @@
               2
             ]
           },
-          "monthTradeBalance": "$monthTradeBalance",
+          "monthTradeBalance":"$monthTradeBalance",
           "monthTradeSum": "$monthTradeSum",
           "tradeIncome": "$tradeIncome",
           "cashboxStartMorning": "$cashboxStartMorning",
           "cashboxEndMorning": "$cashboxEndMorning",
-          "endBasket": "$endBasket",
-          "startBasket": {
-            "$ifNull": [
-              "$startBasket",
-              0
-            ]
-          }
+          "endBasket":"$endBasket",
+          "startBasket":{"$ifNull":["$startBasket",0]}
         }
       }
     }
@@ -833,12 +728,6 @@
       "as": "branchInfo"
     }
   },
-  {
-    "$unwind": "$branchInfo"
-  },
-  {
-    "$sort": {
-      "branchInfo.name": 1
-    }
-  }
+  {"$unwind":"$branchInfo"},
+  {"$sort":{"branchInfo.name":1}}
 ]
