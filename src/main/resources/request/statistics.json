@@ -363,7 +363,6 @@
         {
           "$project": {
             "_id": 0,
-            "monthTradeBalance": 1,
             "endBasket": 1
           }
         }
@@ -534,42 +533,6 @@
                 }
               }
             },
-            "monthTradeSum": {
-              "$sum": {
-                "$add": [
-                  {
-                    "$sum": {
-                      "$convert": {
-                        "input": "$goldTradeSum",
-                        "to": "double",
-                        "onError": 0,
-                        "onNull": 0
-                      }
-                    }
-                  },
-                  {
-                    "$sum": {
-                      "$convert": {
-                        "input": "$silverTradeSum",
-                        "to": "double",
-                        "onError": 0,
-                        "onNull": 0
-                      }
-                    }
-                  },
-                  {
-                    "$sum": {
-                      "$convert": {
-                        "input": "$goodsTradeSum",
-                        "to": "double",
-                        "onError": 0,
-                        "onNull": 0
-                      }
-                    }
-                  }
-                ]
-              }
-            },
             "monthTradeBalance": {
               "$sum": {
                 "$add": [
@@ -605,9 +568,6 @@
                   }
                 ]
               }
-            },
-            "monthAverageBasket": {
-              "$sum": 1
             }
           }
         },
@@ -699,8 +659,8 @@
           }
         ]
       },
-      "monthTradeBalance": "$monthTradeBalance1.monthTradeBalance",
-      "monthTradeSum": "$auctionAmount1.monthTradeSum",
+      "monthTradeBalance": "$auctionAmount1.monthTradeBalance",
+      "monthTradeSum": "$auctionAmount1.auctionAmount",
       "tradeIncome": "$auctionAmount1.auctionAmount",
       "cashboxStartMorning": {
         "$convert": {

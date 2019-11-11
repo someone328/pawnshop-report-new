@@ -380,8 +380,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "        },\n" +
                     "        {\n" +
                     "          \"$project\": {\n" +
-                    "            \"_id\": 0,\n" +
-                    "            \"monthTradeBalance\": 1,\n" +
+                    "            \"_id\": 0,            \n" +
                     "            \"endBasket\": 1\n" +
                     "          }\n" +
                     "        }\n" +
@@ -552,42 +551,6 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "                }\n" +
                     "              }\n" +
                     "            },\n" +
-                    "            \"monthTradeSum\": {\n" +
-                    "              \"$sum\": {\n" +
-                    "                \"$add\": [\n" +
-                    "                  {\n" +
-                    "                    \"$sum\": {\n" +
-                    "                      \"$convert\": {\n" +
-                    "                        \"input\": \"$goldTradeSum\",\n" +
-                    "                        \"to\": \"double\",\n" +
-                    "                        \"onError\": 0,\n" +
-                    "                        \"onNull\": 0\n" +
-                    "                      }\n" +
-                    "                    }\n" +
-                    "                  },\n" +
-                    "                  {\n" +
-                    "                    \"$sum\": {\n" +
-                    "                      \"$convert\": {\n" +
-                    "                        \"input\": \"$silverTradeSum\",\n" +
-                    "                        \"to\": \"double\",\n" +
-                    "                        \"onError\": 0,\n" +
-                    "                        \"onNull\": 0\n" +
-                    "                      }\n" +
-                    "                    }\n" +
-                    "                  },\n" +
-                    "                  {\n" +
-                    "                    \"$sum\": {\n" +
-                    "                      \"$convert\": {\n" +
-                    "                        \"input\": \"$goodsTradeSum\",\n" +
-                    "                        \"to\": \"double\",\n" +
-                    "                        \"onError\": 0,\n" +
-                    "                        \"onNull\": 0\n" +
-                    "                      }\n" +
-                    "                    }\n" +
-                    "                  }\n" +
-                    "                ]\n" +
-                    "              }\n" +
-                    "            },\n" +
                     "            \"monthTradeBalance\": {\n" +
                     "              \"$sum\": {\n" +
                     "                \"$add\": [\n" +
@@ -623,9 +586,6 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "                  }\n" +
                     "                ]\n" +
                     "              }\n" +
-                    "            },\n" +
-                    "            \"monthAverageBasket\": {\n" +
-                    "              \"$sum\": 1\n" +
                     "            }\n" +
                     "          }\n" +
                     "        },\n" +
@@ -717,8 +677,8 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "          }\n" +
                     "        ]\n" +
                     "      },\n" +
-                    "      \"monthTradeBalance\": \"$monthTradeBalance1.monthTradeBalance\",\n" +
-                    "      \"monthTradeSum\": \"$auctionAmount1.monthTradeSum\",\n" +
+                    "      \"monthTradeBalance\": \"$auctionAmount1.monthTradeBalance\",\n" +
+                    "      \"monthTradeSum\": \"$auctionAmount1.auctionAmount\",\n" +
                     "      \"tradeIncome\": \"$auctionAmount1.auctionAmount\",\n" +
                     "      \"cashboxStartMorning\": {\n" +
                     "        \"$convert\": {\n" +
@@ -796,7 +756,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "      \"branchInfo.name\": 1\n" +
                     "    }\n" +
                     "  }\n" +
-                    "]\n";
+                    "]";
     private EventBus bus;
 
     private MongoClient client;
