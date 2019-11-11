@@ -75,6 +75,19 @@ public class SelfDeployerVerticle extends AbstractVerticle {
                         "pawnshop-report");
 
         createTablesAndAdmin(adminUser, client);
+        createIndexes(client);
+    }
+
+    private void createIndexes(MongoClient client) {
+        client.rxCreateIndex("report", new JsonObject()
+                .put("branch", "hashed"))
+                .subscribe(
+                        () -> System.out.println("Branch index created or was there"),
+                        onError -> System.out.println("Cannot create Branch index:" + onError));
+        client.rxCreateIndex("report", new JsonObject().put("date", 1))
+                .subscribe(
+                        () -> System.out.println("Date index created or was there"),
+                        onError -> System.out.println("Cannot create Date index:" + onError));
     }
 
     private void createTablesAndAdmin(JsonObject adminUser, MongoClient client) {
@@ -99,6 +112,7 @@ public class SelfDeployerVerticle extends AbstractVerticle {
                                         h -> {
                                             client.close();
                                         }));
+
     }
 
     private void undeployVerticles() {
