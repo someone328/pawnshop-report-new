@@ -5,6 +5,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.mongo.AggregateOptions;
 import io.vertx.reactivex.core.eventbus.EventBus;
 import io.vertx.reactivex.ext.mongo.MongoClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
@@ -26,11 +27,70 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "    }\n" +
                     "  },\n" +
                     "  {\n" +
+                    "    \"$group\": {\n" +
+                    "      \"_id\": {\n" +
+                    "        \"branch\": \"$branch\",\n" +
+                    "        \"month\": {\n" +
+                    "          \"$month\": {\n" +
+                    "            \"$toDate\": \"$date\"\n" +
+                    "          }\n" +
+                    "        }\n" +
+                    "      },\n" +
+                    "      \"monthMinDate\": {\n" +
+                    "        \"$min\": \"$date\"\n" +
+                    "      },\n" +
+                    "      \"monthMaxDate\": {\n" +
+                    "        \"$max\": \"$date\"\n" +
+                    "      },\n" +
+                    "      \"monthLoanRub\": {\n" +
+                    "        \"$sum\": {\n" +
+                    "          \"$convert\": {\n" +
+                    "            \"input\": \"$loanedRub\",\n" +
+                    "            \"to\": \"double\",\n" +
+                    "            \"onError\": 0,\n" +
+                    "            \"onNull\": 0\n" +
+                    "          }\n" +
+                    "        }\n" +
+                    "      },\n" +
+                    "      \"monthRepayRub\": {\n" +
+                    "        \"$sum\": {\n" +
+                    "          \"$convert\": {\n" +
+                    "            \"input\": \"$repayedRub\",\n" +
+                    "            \"to\": \"double\",\n" +
+                    "            \"onError\": 0,\n" +
+                    "            \"onNull\": 0\n" +
+                    "          }\n" +
+                    "        }\n" +
+                    "      },\n" +
+                    "      \"volume\": {\n" +
+                    "        \"$sum\": \"$volume.volume\"\n" +
+                    "      },\n" +
+                    "      \"monthExpenses\": {\n" +
+                    "        \"$sum\": {\n" +
+                    "          \"$sum\": {\n" +
+                    "            \"$map\": {\n" +
+                    "              \"input\": \"$expenses\",\n" +
+                    "              \"as\": \"expense\",\n" +
+                    "              \"in\": {\n" +
+                    "                \"$convert\": {\n" +
+                    "                  \"input\": \"$$expense.sum\",\n" +
+                    "                  \"to\": \"double\",\n" +
+                    "                  \"onError\": 0,\n" +
+                    "                  \"onNull\": 0\n" +
+                    "                }\n" +
+                    "              }\n" +
+                    "            }\n" +
+                    "          }\n" +
+                    "        }\n" +
+                    "      }\n" +
+                    "    }\n" +
+                    "  },\n" +
+                    "  {\n" +
                     "    \"$lookup\": {\n" +
                     "      \"from\": \"report\",\n" +
                     "      \"let\": {\n" +
-                    "        \"report_branch\": \"$branch\",\n" +
-                    "        \"report_date\": \"$date\"\n" +
+                    "        \"report_branch\": \"$_id.branch\",\n" +
+                    "        \"report_date\": \"$monthMaxDate\"\n" +
                     "      },\n" +
                     "      \"pipeline\": [\n" +
                     "        {\n" +
@@ -107,65 +167,6 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "  },\n" +
                     "  {\n" +
                     "    \"$unwind\": \"$volume\"\n" +
-                    "  },\n" +
-                    "  {\n" +
-                    "    \"$group\": {\n" +
-                    "      \"_id\": {\n" +
-                    "        \"branch\": \"$branch\",\n" +
-                    "        \"month\": {\n" +
-                    "          \"$month\": {\n" +
-                    "            \"$toDate\": \"$date\"\n" +
-                    "          }\n" +
-                    "        }\n" +
-                    "      },\n" +
-                    "      \"monthMinDate\": {\n" +
-                    "        \"$min\": \"$date\"\n" +
-                    "      },\n" +
-                    "      \"monthMaxDate\": {\n" +
-                    "        \"$max\": \"$date\"\n" +
-                    "      },\n" +
-                    "      \"monthLoanRub\": {\n" +
-                    "        \"$sum\": {\n" +
-                    "          \"$convert\": {\n" +
-                    "            \"input\": \"$loanedRub\",\n" +
-                    "            \"to\": \"double\",\n" +
-                    "            \"onError\": 0,\n" +
-                    "            \"onNull\": 0\n" +
-                    "          }\n" +
-                    "        }\n" +
-                    "      },\n" +
-                    "      \"monthRepayRub\": {\n" +
-                    "        \"$sum\": {\n" +
-                    "          \"$convert\": {\n" +
-                    "            \"input\": \"$repayedRub\",\n" +
-                    "            \"to\": \"double\",\n" +
-                    "            \"onError\": 0,\n" +
-                    "            \"onNull\": 0\n" +
-                    "          }\n" +
-                    "        }\n" +
-                    "      },\n" +
-                    "      \"volume\": {\n" +
-                    "        \"$sum\": \"$volume.volume\"\n" +
-                    "      },\n" +
-                    "      \"monthExpenses\": {\n" +
-                    "        \"$sum\": {\n" +
-                    "          \"$sum\": {\n" +
-                    "            \"$map\": {\n" +
-                    "              \"input\": \"$expenses\",\n" +
-                    "              \"as\": \"expense\",\n" +
-                    "              \"in\": {\n" +
-                    "                \"$convert\": {\n" +
-                    "                  \"input\": \"$$expense.sum\",\n" +
-                    "                  \"to\": \"double\",\n" +
-                    "                  \"onError\": 0,\n" +
-                    "                  \"onNull\": 0\n" +
-                    "                }\n" +
-                    "              }\n" +
-                    "            }\n" +
-                    "          }\n" +
-                    "        }\n" +
-                    "      }\n" +
-                    "    }\n" +
                     "  },\n" +
                     "  {\n" +
                     "    \"$lookup\": {\n" +
@@ -614,38 +615,9 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "      \"month\": \"$_id.month\",\n" +
                     "      \"monthMinDate\": 1,\n" +
                     "      \"monthMaxDate\": 1,\n" +
-                    "      \"daysInMonth\": {\n" +
-                    "        \"$add\": [\n" +
-                    "          {\n" +
-                    "            \"$dayOfMonth\": {\n" +
-                    "              \"$dateFromParts\": {\n" +
-                    "                \"year\": {\n" +
-                    "                  \"$year\": {\n" +
-                    "                    \"$toDate\": \"$monthMinDate\"\n" +
-                    "                  }\n" +
-                    "                },\n" +
-                    "                \"month\": {\n" +
-                    "                  \"$add\": [\n" +
-                    "                    {\n" +
-                    "                      \"$toDouble\": {\n" +
-                    "                        \"$month\": {\n" +
-                    "                          \"$toDate\": \"$monthMinDate\"\n" +
-                    "                        }\n" +
-                    "                      }\n" +
-                    "                    },\n" +
-                    "                    1\n" +
-                    "                  ]\n" +
-                    "                },\n" +
-                    "                \"day\": -1\n" +
-                    "              }\n" +
-                    "            }\n" +
-                    "          },\n" +
-                    "          1\n" +
-                    "        ]\n" +
-                    "      },\n" +
                     "      \"monthAverageBasket\": {\n" +
                     "        \"$divide\": [\n" +
-                    "          \"$volume\",\n" +
+                    "          \"$volume.volume\",\n" +
                     "          {\n" +
                     "            \"$add\": [\n" +
                     "              {\n" +
@@ -773,7 +745,11 @@ public class StatisticsHandler implements Handler<RoutingContext> {
         System.out.println(startOfYear);
         System.out.println(endOfYear);
         JsonArray pipeline = new JsonArray(String.format(statisticsRequest, startOfYear, endOfYear));
-        client.aggregate(CrudHandler.SupportedObjectTypes.REPORT.name().toLowerCase(), pipeline)
+        AggregateOptions aggregateOptions = new AggregateOptions();
+        aggregateOptions.setAllowDiskUse(true);
+        aggregateOptions.setMaxAwaitTime(0L);
+        aggregateOptions.setMaxTime(0L);
+        client.aggregateWithOptions(CrudHandler.SupportedObjectTypes.REPORT.name().toLowerCase(), pipeline, aggregateOptions)
                 .toObservable()
                 .reduce(new JsonArray(), (arr, br) -> arr.add(JsonObject.mapFrom(br)))
                 .subscribe(

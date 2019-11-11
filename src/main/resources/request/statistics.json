@@ -8,11 +8,70 @@
     }
   },
   {
+    "$group": {
+      "_id": {
+        "branch": "$branch",
+        "month": {
+          "$month": {
+            "$toDate": "$date"
+          }
+        }
+      },
+      "monthMinDate": {
+        "$min": "$date"
+      },
+      "monthMaxDate": {
+        "$max": "$date"
+      },
+      "monthLoanRub": {
+        "$sum": {
+          "$convert": {
+            "input": "$loanedRub",
+            "to": "double",
+            "onError": 0,
+            "onNull": 0
+          }
+        }
+      },
+      "monthRepayRub": {
+        "$sum": {
+          "$convert": {
+            "input": "$repayedRub",
+            "to": "double",
+            "onError": 0,
+            "onNull": 0
+          }
+        }
+      },
+      "volume": {
+        "$sum": "$volume.volume"
+      },
+      "monthExpenses": {
+        "$sum": {
+          "$sum": {
+            "$map": {
+              "input": "$expenses",
+              "as": "expense",
+              "in": {
+                "$convert": {
+                  "input": "$$expense.sum",
+                  "to": "double",
+                  "onError": 0,
+                  "onNull": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
     "$lookup": {
       "from": "report",
       "let": {
-        "report_branch": "$branch",
-        "report_date": "$date"
+        "report_branch": "$_id.branch",
+        "report_date": "$monthMaxDate"
       },
       "pipeline": [
         {
@@ -89,65 +148,6 @@
   },
   {
     "$unwind": "$volume"
-  },
-  {
-    "$group": {
-      "_id": {
-        "branch": "$branch",
-        "month": {
-          "$month": {
-            "$toDate": "$date"
-          }
-        }
-      },
-      "monthMinDate": {
-        "$min": "$date"
-      },
-      "monthMaxDate": {
-        "$max": "$date"
-      },
-      "monthLoanRub": {
-        "$sum": {
-          "$convert": {
-            "input": "$loanedRub",
-            "to": "double",
-            "onError": 0,
-            "onNull": 0
-          }
-        }
-      },
-      "monthRepayRub": {
-        "$sum": {
-          "$convert": {
-            "input": "$repayedRub",
-            "to": "double",
-            "onError": 0,
-            "onNull": 0
-          }
-        }
-      },
-      "volume": {
-        "$sum": "$volume.volume"
-      },
-      "monthExpenses": {
-        "$sum": {
-          "$sum": {
-            "$map": {
-              "input": "$expenses",
-              "as": "expense",
-              "in": {
-                "$convert": {
-                  "input": "$$expense.sum",
-                  "to": "double",
-                  "onError": 0,
-                  "onNull": 0
-                }
-              }
-            }
-          }
-        }
-      }
-    }
   },
   {
     "$lookup": {
@@ -596,38 +596,9 @@
       "month": "$_id.month",
       "monthMinDate": 1,
       "monthMaxDate": 1,
-      "daysInMonth": {
-        "$add": [
-          {
-            "$dayOfMonth": {
-              "$dateFromParts": {
-                "year": {
-                  "$year": {
-                    "$toDate": "$monthMinDate"
-                  }
-                },
-                "month": {
-                  "$add": [
-                    {
-                      "$toDouble": {
-                        "$month": {
-                          "$toDate": "$monthMinDate"
-                        }
-                      }
-                    },
-                    1
-                  ]
-                },
-                "day": -1
-              }
-            }
-          },
-          1
-        ]
-      },
       "monthAverageBasket": {
         "$divide": [
-          "$volume",
+          "$volume.volume",
           {
             "$add": [
               {
