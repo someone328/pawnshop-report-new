@@ -27,6 +27,94 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "    }\n" +
                     "  },\n" +
                     "  {\n" +
+                    "    \"$lookup\": {\n" +
+                    "      \"from\": \"report\",\n" +
+                    "      \"let\": {\n" +
+                    "        \"report_branch\": \"$branch\",\n" +
+                    "        \"report_date\": \"$date\"\n" +
+                    "      },\n" +
+                    "      \"pipeline\": [\n" +
+                    "        {\n" +
+                    "          \"$match\": {\n" +
+                    "            \"$expr\": {\n" +
+                    "              \"$and\": [\n" +
+                    "                {\n" +
+                    "                  \"$eq\": [\n" +
+                    "                    \"$branch\",\n" +
+                    "                    \"$$report_branch\"\n" +
+                    "                  ]\n" +
+                    "                },\n" +
+                    "                {\n" +
+                    "                  \"$lte\": [\n" +
+                    "                    \"$date\",\n" +
+                    "                    \"$$report_date\"\n" +
+                    "                  ]\n" +
+                    "                }\n" +
+                    "              ]\n" +
+                    "            }\n" +
+                    "          }\n" +
+                    "        },\n" +
+                    "        {\n" +
+                    "          \"$group\": {\n" +
+                    "            \"_id\": \"$date\",\n" +
+                    "            \"volume\": {\n" +
+                    "              \"$sum\": {\n" +
+                    "                \"$subtract\": [\n" +
+                    "                  {\n" +
+                    "                    \"$subtract\": [\n" +
+                    "                      {\n" +
+                    "                        \"$toDouble\": {\n" +
+                    "                          \"$subtract\": [\n" +
+                    "                            {\n" +
+                    "                              \"$toDouble\": \"$loanedRub\"\n" +
+                    "                            },\n" +
+                    "                            {\n" +
+                    "                              \"$toDouble\": \"$repayedRub\"\n" +
+                    "                            }\n" +
+                    "                          ]\n" +
+                    "                        }\n" +
+                    "                      },\n" +
+                    "                      {\n" +
+                    "                        \"$toDouble\": \"$goodsTradeSum\"\n" +
+                    "                      }\n" +
+                    "                    ]\n" +
+                    "                  },\n" +
+                    "                  {\n" +
+                    "                    \"$toDouble\": {\n" +
+                    "                      \"$add\": [\n" +
+                    "                        {\n" +
+                    "                          \"$toDouble\": \"$goldTradeSum\"\n" +
+                    "                        },\n" +
+                    "                        {\n" +
+                    "                          \"$toDouble\": \"$silverTradeSum\"\n" +
+                    "                        }\n" +
+                    "                      ]\n" +
+                    "                    }\n" +
+                    "                  }\n" +
+                    "                ]\n" +
+                    "              }\n" +
+                    "            }\n" +
+                    "          }\n" +
+                    "        },\n" +
+                    "        {\n" +
+                    "          \"$group\": {\n" +
+                    "            \"_id\": 1,\n" +
+                    "            \"volume\": {\n" +
+                    "              \"$sum\": \"$volume\"\n" +
+                    "            }\n" +
+                    "          }\n" +
+                    "        }\n" +
+                    "      ],\n" +
+                    "      \"as\": \"volume\"\n" +
+                    "    }\n" +
+                    "  },\n" +
+                    "  {\n" +
+                    "    \"$unwind\": {\n" +
+                    "      \"path\": \"$volume\",\n" +
+                    "      \"preserveNullAndEmptyArrays\": true\n" +
+                    "    }\n" +
+                    "  },\n" +
+                    "  {\n" +
                     "    \"$group\": {\n" +
                     "      \"_id\": {\n" +
                     "        \"branch\": \"$branch\",\n" +
@@ -84,89 +172,6 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "        }\n" +
                     "      }\n" +
                     "    }\n" +
-                    "  },\n" +
-                    "  {\n" +
-                    "    \"$lookup\": {\n" +
-                    "      \"from\": \"report\",\n" +
-                    "      \"let\": {\n" +
-                    "        \"report_branch\": \"$_id.branch\",\n" +
-                    "        \"report_date\": \"$monthMaxDate\"\n" +
-                    "      },\n" +
-                    "      \"pipeline\": [\n" +
-                    "        {\n" +
-                    "          \"$match\": {\n" +
-                    "            \"$expr\": {\n" +
-                    "              \"$and\": [\n" +
-                    "                {\n" +
-                    "                  \"$eq\": [\n" +
-                    "                    \"$branch\",\n" +
-                    "                    \"$$report_branch\"\n" +
-                    "                  ]\n" +
-                    "                },\n" +
-                    "                {\n" +
-                    "                  \"$lte\": [\n" +
-                    "                    \"$date\",\n" +
-                    "                    \"$$report_date\"\n" +
-                    "                  ]\n" +
-                    "                }\n" +
-                    "              ]\n" +
-                    "            }\n" +
-                    "          }\n" +
-                    "        },\n" +
-                    "        {\n" +
-                    "          \"$group\": {\n" +
-                    "            \"_id\": \"branch\",\n" +
-                    "            \"volume\": {\n" +
-                    "              \"$sum\": {\n" +
-                    "                \"$subtract\": [\n" +
-                    "                  {\n" +
-                    "                    \"$subtract\": [\n" +
-                    "                      {\n" +
-                    "                        \"$toDouble\": {\n" +
-                    "                          \"$subtract\": [\n" +
-                    "                            {\n" +
-                    "                              \"$toDouble\": \"$loanedRub\"\n" +
-                    "                            },\n" +
-                    "                            {\n" +
-                    "                              \"$toDouble\": \"$repayedRub\"\n" +
-                    "                            }\n" +
-                    "                          ]\n" +
-                    "                        }\n" +
-                    "                      },\n" +
-                    "                      {\n" +
-                    "                        \"$toDouble\": \"$goodsTradeSum\"\n" +
-                    "                      }\n" +
-                    "                    ]\n" +
-                    "                  },\n" +
-                    "                  {\n" +
-                    "                    \"$toDouble\": {\n" +
-                    "                      \"$add\": [\n" +
-                    "                        {\n" +
-                    "                          \"$toDouble\": \"$goldTradeSum\"\n" +
-                    "                        },\n" +
-                    "                        {\n" +
-                    "                          \"$toDouble\": \"$silverTradeSum\"\n" +
-                    "                        }\n" +
-                    "                      ]\n" +
-                    "                    }\n" +
-                    "                  }\n" +
-                    "                ]\n" +
-                    "              }\n" +
-                    "            }\n" +
-                    "          }\n" +
-                    "        },\n" +
-                    "        {\n" +
-                    "          \"$project\": {\n" +
-                    "            \"_id\": 0,\n" +
-                    "            \"volume\": 1\n" +
-                    "          }\n" +
-                    "        }\n" +
-                    "      ],\n" +
-                    "      \"as\": \"volume\"\n" +
-                    "    }\n" +
-                    "  },\n" +
-                    "  {\n" +
-                    "    \"$unwind\": \"$volume\"\n" +
                     "  },\n" +
                     "  {\n" +
                     "    \"$lookup\": {\n" +
@@ -617,7 +622,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "      \"monthMaxDate\": 1,\n" +
                     "      \"monthAverageBasket\": {\n" +
                     "        \"$divide\": [\n" +
-                    "          \"$volume.volume\",\n" +
+                    "          \"$volume\",\n" +
                     "          {\n" +
                     "            \"$add\": [\n" +
                     "              {\n" +

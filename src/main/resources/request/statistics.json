@@ -8,6 +8,94 @@
     }
   },
   {
+    "$lookup": {
+      "from": "report",
+      "let": {
+        "report_branch": "$branch",
+        "report_date": "$date"
+      },
+      "pipeline": [
+        {
+          "$match": {
+            "$expr": {
+              "$and": [
+                {
+                  "$eq": [
+                    "$branch",
+                    "$$report_branch"
+                  ]
+                },
+                {
+                  "$lte": [
+                    "$date",
+                    "$$report_date"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$group": {
+            "_id": "$date",
+            "volume": {
+              "$sum": {
+                "$subtract": [
+                  {
+                    "$subtract": [
+                      {
+                        "$toDouble": {
+                          "$subtract": [
+                            {
+                              "$toDouble": "$loanedRub"
+                            },
+                            {
+                              "$toDouble": "$repayedRub"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "$toDouble": "$goodsTradeSum"
+                      }
+                    ]
+                  },
+                  {
+                    "$toDouble": {
+                      "$add": [
+                        {
+                          "$toDouble": "$goldTradeSum"
+                        },
+                        {
+                          "$toDouble": "$silverTradeSum"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "$group": {
+            "_id": 1,
+            "volume": {
+              "$sum": "$volume"
+            }
+          }
+        }
+      ],
+      "as": "volume"
+    }
+  },
+  {
+    "$unwind": {
+      "path": "$volume",
+      "preserveNullAndEmptyArrays": true
+    }
+  },
+  {
     "$group": {
       "_id": {
         "branch": "$branch",
@@ -65,89 +153,6 @@
         }
       }
     }
-  },
-  {
-    "$lookup": {
-      "from": "report",
-      "let": {
-        "report_branch": "$_id.branch",
-        "report_date": "$monthMaxDate"
-      },
-      "pipeline": [
-        {
-          "$match": {
-            "$expr": {
-              "$and": [
-                {
-                  "$eq": [
-                    "$branch",
-                    "$$report_branch"
-                  ]
-                },
-                {
-                  "$lte": [
-                    "$date",
-                    "$$report_date"
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "$group": {
-            "_id": "branch",
-            "volume": {
-              "$sum": {
-                "$subtract": [
-                  {
-                    "$subtract": [
-                      {
-                        "$toDouble": {
-                          "$subtract": [
-                            {
-                              "$toDouble": "$loanedRub"
-                            },
-                            {
-                              "$toDouble": "$repayedRub"
-                            }
-                          ]
-                        }
-                      },
-                      {
-                        "$toDouble": "$goodsTradeSum"
-                      }
-                    ]
-                  },
-                  {
-                    "$toDouble": {
-                      "$add": [
-                        {
-                          "$toDouble": "$goldTradeSum"
-                        },
-                        {
-                          "$toDouble": "$silverTradeSum"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "$project": {
-            "_id": 0,
-            "volume": 1
-          }
-        }
-      ],
-      "as": "volume"
-    }
-  },
-  {
-    "$unwind": "$volume"
   },
   {
     "$lookup": {
@@ -598,7 +603,7 @@
       "monthMaxDate": 1,
       "monthAverageBasket": {
         "$divide": [
-          "$volume.volume",
+          "$volume",
           {
             "$add": [
               {
