@@ -1,0 +1,526 @@
+[
+  {
+    "_id": "5d2f01c1f01b102aaf4586e7",
+    "username": "admin",
+    "password": "cocacola#1",
+    "name": "Глобальный администратор",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d428ccd14ce4a692cce08b3",
+    "username": "levx",
+    "password": "cocacola",
+    "name": "Закарян Левон Акопович",
+    "roles": [
+      "user"
+    ],
+    "branches": [
+      "5d3775e442105000ccc036ee",
+      "5d3775fa42105000ccc036ef",
+      "5d37761342105000ccc036f0",
+      "5d3776fe42105000ccc036f1"
+    ],
+    "version": 1
+  },
+  {
+    "_id": "5d428fec14ce4a692cce08b4",
+    "username": "idshapkin",
+    "password": "dirapymary",
+    "name": "Шапкин Иван Дмитриевич",
+    "roles": [
+      "admin"
+    ],
+    "branches": [
+      "5d3775e442105000ccc036ee",
+      "5d3775fa42105000ccc036ef",
+      "5d37761342105000ccc036f0",
+      "5d3776fe42105000ccc036f1"
+    ]
+  },
+  {
+    "_id": "5d473a1c14ce4a692cce08b5",
+    "username": "user01",
+    "password": "user01",
+    "name": "User11",
+    "roles": [
+      "user"
+    ],
+    "branches": [
+      "5d3775e442105000ccc036ee",
+      "5d3775fa42105000ccc036ef",
+      "5d37761342105000ccc036f0"
+    ]
+  },
+  {
+    "_id": "5d474dee14ce4a692cce08c0",
+    "username": "user02",
+    "password": "user02",
+    "name": "Пользователь2",
+    "roles": [
+      "user"
+    ],
+    "branches": [
+      "5d3775e442105000ccc036ee",
+      "5d3775fa42105000ccc036ef",
+      "5d37761342105000ccc036f0",
+      "5d3776fe42105000ccc036f1",
+      "5d8149ab940ea858d498e16c"
+    ],
+    "version": 1
+  },
+  {
+    "_id": "5d5271865e97dc0971b6efe0",
+    "username": "admin02",
+    "password": "admin02",
+    "name": "admin0202",
+    "roles": [
+      "admin"
+    ],
+    "branches": [
+      "5d3775e442105000ccc036ee",
+      "5d3775fa42105000ccc036ef",
+      "5d37761342105000ccc036f0",
+      "5d3776fe42105000ccc036f1",
+      "5d40b2c814ce4a692cce08b2"
+    ],
+    "version": 1
+  },
+  {
+    "_id": "5d5273e15e97dc0971b6efe2",
+    "username": "user03",
+    "password": "user03",
+    "name": "Тестовый Пользователь Системы (5)",
+    "roles": [
+      "user"
+    ],
+    "branches": [
+      "5d5271615e97dc0971b6efdf",
+      "5d6906520c702027ccad6715"
+    ]
+  },
+  {
+    "_id": "5d69067e0c702027ccad6716",
+    "username": "User001",
+    "password": "User001",
+    "name": "Первый пользователь отделения",
+    "roles": [
+      "user"
+    ],
+    "branches": [
+      "5d6906520c702027ccad6715"
+    ]
+  },
+  {
+    "_id": "5d6f0d5ddd2f2d11f4f023d1",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d6f3f670138314ca1bed64c",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d6f4026e4e59f70b3570d7a",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d6ff995e4e59f70b3570d7d",
+    "username": "user07",
+    "password": "user07",
+    "name": "user07",
+    "roles": [
+      "user"
+    ],
+    "branches": [
+      "5d6ff937e4e59f70b3570d7c"
+    ]
+  },
+  {
+    "_id": "5d703c80f578b56d5f6988ac",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d708e3644b477337f8b9e1d",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d709b4284a0587bb9fcb755",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d709c2aa6fd3f2514ccc5ac",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d72a2e6a6fd3f2514ccc5ae",
+    "username": "UP",
+    "password": "UP",
+    "name": "Юлия Павловна",
+    "roles": [
+      "user"
+    ],
+    "branches": [
+      "5d72a2c7a6fd3f2514ccc5ad"
+    ]
+  },
+  {
+    "_id": "5d72b9fd8672a82bbdb7e7ed",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d72c36bf86b004fc494f903",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d78b9d0f86b004fc494f904",
+    "username": "отд 5",
+    "password": "Start",
+    "name": "Сидоров",
+    "roles": [
+      "user"
+    ],
+    "branches": [
+      "5d40b2c814ce4a692cce08b2"
+    ]
+  },
+  {
+    "_id": "5d78b9f8f86b004fc494f905",
+    "username": "отд5-1",
+    "password": "start123",
+    "name": "Смирнов",
+    "roles": [
+      "user"
+    ],
+    "branches": [
+      "5d40b2c814ce4a692cce08b2"
+    ]
+  },
+  {
+    "_id": "5d78d163f86b004fc494f90c",
+    "username": "Админ",
+    "password": "админ",
+    "name": "Аа",
+    "roles": [
+      "admin"
+    ],
+    "branches": [
+      "5d3775e442105000ccc036ee",
+      "5d3775fa42105000ccc036ef",
+      "5d37761342105000ccc036f0",
+      "5d3776fe42105000ccc036f1",
+      "5d40b2c814ce4a692cce08b2",
+      "5d5271615e97dc0971b6efdf",
+      "5d651632f26cd07b8e12cb7e",
+      "5d6906520c702027ccad6715",
+      "5d6ff937e4e59f70b3570d7c",
+      "5d72a2c7a6fd3f2514ccc5ad"
+    ]
+  },
+  {
+    "_id": "5d78d1a4f86b004fc494f90d",
+    "username": "Админ 0",
+    "password": "админ",
+    "name": "Ад",
+    "roles": [
+      "admin"
+    ],
+    "branches": null
+  },
+  {
+    "_id": "5d79357e5ed9897ff6582b3e",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d79412f74ad9f5cde972592",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d79484f8823fb227df44e77",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d7948909990a820b6b75bcd",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d794b59652fba3fe89cf596",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d7a177cde35805014106998",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d7a1b81dd9f110a79ebbe59",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d7b4304bb9e17124d53f189",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d7b57f8a27352191f967f60",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d7ea3ed259c500192f52b35",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d80193f940ea858d498e163",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d829fb133b71c04753c67e0",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d82bfb69c6cd90cb1f355f4",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d83d2aa2915c6336e7252f4",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d83e05fae6e931e2b4f4e01",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d83f4cffba26a5822bc3f0d",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d88959d8e0dc350fa0592dc",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d8bdce78f652820d1e5b69e",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d8be2023c8f15228fbbd51d",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d8c62f2b551741de9ddc385",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d8cbb0c5aaf256fda25636a",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d8cfcb3cc220778ab21a8e1",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d8d3d1c97f2907e4a5d3b36",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  },
+  {
+    "_id": "5d8d3dfcb711f91134f426ca",
+    "username": "admin",
+    "password": "cocacola#1",
+    "roles": [
+      "admin",
+      "reviewer",
+      "user"
+    ]
+  }
+]
