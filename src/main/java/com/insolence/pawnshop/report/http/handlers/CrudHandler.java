@@ -97,16 +97,20 @@ public class CrudHandler implements Handler<RoutingContext> {
     }
 
     private void processGetOperation(RoutingContext rc, DeliveryOptions deliveryOptions, JsonObject jsonBody) {
+
         rc.vertx()
                 .eventBus()
                 .rxSend("crud.get", jsonBody, deliveryOptions)
                 .map(response -> response.body().toString())
                 .doOnError(e -> log.error("Crud get error. ", e))
                 .subscribe(
-                        crudResult ->
-                                rc.response()
-                                        .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
-                                        .end(crudResult),
+                        crudResult -> {
+                            JsonArray resJson = new JsonArray(crudResult);
+                            resJson.stream().forEach(c -> ((JsonObject) c).remove("password"));
+                            rc.response()
+                                    .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
+                                    .end(resJson.toString());
+                        },
                         error -> {
                             log.error("Crud get error. ", error);
                             rc.fail(500);
@@ -188,6 +192,10 @@ public class CrudHandler implements Handler<RoutingContext> {
                 PUT, new String[]{"admin"},
                 GET, new String[]{"admin", "reviewer", "user"},
                 DELETE, new String[]{"admin"})),
+        USERP(Map.of(
+                PUT, new String[]{"nobody"},
+                GET, new String[]{"admin", "reviewer", "user"},
+                DELETE, new String[]{"nobody"})),
         REPORT(Map.of(
                 PUT, new String[]{"admin", "reviewer", "user"},
                 GET, new String[]{"admin", "reviewer", "user"},
