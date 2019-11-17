@@ -4,6 +4,7 @@ import com.insolence.pawnshop.report.domain.Report;
 import com.insolence.pawnshop.report.util.Pair;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.DeliveryOptions;
@@ -97,24 +98,38 @@ public class CrudHandler implements Handler<RoutingContext> {
     }
 
     private void processGetOperation(RoutingContext rc, DeliveryOptions deliveryOptions, JsonObject jsonBody) {
-
-        rc.vertx()
+        String objectType = deliveryOptions.getHeaders().get("objectType");
+        if (objectType.equals("userp")) {
+            deliveryOptions.getHeaders().set("objectType", "user");
+        }
+        Single<String> data = rc.vertx()
                 .eventBus()
                 .rxSend("crud.get", jsonBody, deliveryOptions)
                 .map(response -> response.body().toString())
-                .doOnError(e -> log.error("Crud get error. ", e))
-                .subscribe(
-                        crudResult -> {
-                            JsonArray resJson = new JsonArray(crudResult);
-                            resJson.stream().forEach(c -> ((JsonObject) c).remove("password"));
-                            rc.response()
-                                    .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
-                                    .end(resJson.toString());
-                        },
-                        error -> {
-                            log.error("Crud get error. ", error);
-                            rc.fail(500);
-                        });
+                .doOnError(e -> log.error("Crud get error. ", e));
+        if (objectType.equals("user")) {
+            data.subscribe(
+                    crudResult -> {
+                        JsonArray resJson = new JsonArray(crudResult);
+                        resJson.stream().forEach(c -> ((JsonObject) c).remove("password"));
+                        rc.response()
+                                .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
+                                .end(resJson.toString());
+                    },
+                    error -> {
+                        log.error("Crud get error. ", error);
+                        rc.fail(500);
+                    });
+        } else {
+            data.subscribe(
+                    crudResult -> rc.response()
+                            .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
+                            .end(crudResult),
+                    error -> {
+                        log.error("Crud get error. ", error);
+                        rc.fail(500);
+                    });
+        }
     }
 
     //TODO доделать прокидывание сообщений валидации
