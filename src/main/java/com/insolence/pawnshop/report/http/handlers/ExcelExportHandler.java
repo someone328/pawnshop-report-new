@@ -560,7 +560,7 @@ public class ExcelExportHandler implements Handler<RoutingContext> {
 
     private Double getDoubleValue(JsonObject rpt, String path) {
         String stringValue = getStringValue(rpt, path);
-        return Double.valueOf(stringValue.isEmpty() ? "0" : stringValue);
+        return Math.round(Double.valueOf(stringValue.isEmpty() ? "0" : stringValue) * 100) / 100.0;
     }
 
     private void setSheetName(String name) {
