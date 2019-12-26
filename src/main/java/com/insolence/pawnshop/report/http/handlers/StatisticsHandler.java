@@ -130,6 +130,16 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "      \"monthMaxDate\": {\n" +
                     "        \"$max\": \"$date\"\n" +
                     "      },\n" +
+                    "      \"monthPawned\": {\n" +
+                    "        \"$sum\": {\n" +
+                    "          \"$convert\": {\n" +
+                    "            \"input\": \"$loanersPawned\",\n" +
+                    "            \"to\": \"double\",\n" +
+                    "            \"onError\": 0,\n" +
+                    "            \"onNull\": 0\n" +
+                    "          }\n" +
+                    "        }\n" +
+                    "      },\n" +
                     "      \"monthLoanRub\": {\n" +
                     "        \"$sum\": {\n" +
                     "          \"$convert\": {\n" +
@@ -140,10 +150,30 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "          }\n" +
                     "        }\n" +
                     "      },\n" +
+                    "      \"monthBought\": {\n" +
+                    "        \"$sum\": {\n" +
+                    "          \"$convert\": {\n" +
+                    "            \"input\": \"$loanersBought\",\n" +
+                    "            \"to\": \"double\",\n" +
+                    "            \"onError\": 0,\n" +
+                    "            \"onNull\": 0\n" +
+                    "          }\n" +
+                    "        }\n" +
+                    "      },\n" +
                     "      \"monthRepayRub\": {\n" +
                     "        \"$sum\": {\n" +
                     "          \"$convert\": {\n" +
                     "            \"input\": \"$repayedRub\",\n" +
+                    "            \"to\": \"double\",\n" +
+                    "            \"onError\": 0,\n" +
+                    "            \"onNull\": 0\n" +
+                    "          }\n" +
+                    "        }\n" +
+                    "      },\n" +
+                    "      \"percReceived\": {\n" +
+                    "        \"$sum\": {\n" +
+                    "          \"$convert\": {\n" +
+                    "            \"input\": \"$percentRecieved\",\n" +
                     "            \"to\": \"double\",\n" +
                     "            \"onError\": 0,\n" +
                     "            \"onNull\": 0\n" +
@@ -672,10 +702,13 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "          \"onNull\": 0\n" +
                     "        }\n" +
                     "      },\n" +
+                    "      \"monthPawned\": 1,\n" +
                     "      \"monthLoanRub\": 1,\n" +
+                    "      \"monthBought\": 1,\n" +
                     "      \"monthRepayRub\": 1,\n" +
                     "      \"startBasket\": \"$startBasket1.startBasket\",\n" +
                     "      \"endBasket\": \"$monthTradeBalance1.endBasket\",\n" +
+                    "      \"percReceived\": 1,\n" +
                     "      \"monthExpenses\": 1\n" +
                     "    }\n" +
                     "  },\n" +
@@ -689,7 +722,9 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "      \"_id\": \"$branch\",\n" +
                     "      \"monthlyReports\": {\n" +
                     "        \"$push\": {\n" +
+                    "          \"monthPawned\": \"$monthPawned\",\n" +
                     "          \"monthLoanRub\": \"$monthLoanRub\",\n" +
+                    "          \"monthBought\": \"$monthBought\",\n" +
                     "          \"monthRepayRub\": \"$monthRepayRub\",\n" +
                     "          \"monthExpenses\": \"$monthExpenses\",\n" +
                     "          \"month\": \"$month\",\n" +
@@ -705,6 +740,7 @@ public class StatisticsHandler implements Handler<RoutingContext> {
                     "          \"cashboxStartMorning\": \"$cashboxStartMorning\",\n" +
                     "          \"cashboxEndMorning\": \"$cashboxEndMorning\",\n" +
                     "          \"endBasket\": \"$endBasket\",\n" +
+                    "          \"percReceived\": \"$percReceived\",\n" +
                     "          \"startBasket\": {\n" +
                     "            \"$ifNull\": [\n" +
                     "              \"$startBasket\",\n" +

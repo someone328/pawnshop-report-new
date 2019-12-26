@@ -111,6 +111,16 @@
       "monthMaxDate": {
         "$max": "$date"
       },
+      "monthPawned": {
+        "$sum": {
+          "$convert": {
+            "input": "$loanersPawned",
+            "to": "double",
+            "onError": 0,
+            "onNull": 0
+          }
+        }
+      },
       "monthLoanRub": {
         "$sum": {
           "$convert": {
@@ -121,10 +131,30 @@
           }
         }
       },
+      "monthBought": {
+        "$sum": {
+          "$convert": {
+            "input": "$loanersBought",
+            "to": "double",
+            "onError": 0,
+            "onNull": 0
+          }
+        }
+      },
       "monthRepayRub": {
         "$sum": {
           "$convert": {
             "input": "$repayedRub",
+            "to": "double",
+            "onError": 0,
+            "onNull": 0
+          }
+        }
+      },
+      "percReceived": {
+        "$sum": {
+          "$convert": {
+            "input": "$percentRecieved",
             "to": "double",
             "onError": 0,
             "onNull": 0
@@ -653,10 +683,13 @@
           "onNull": 0
         }
       },
+      "monthPawned": 1,
       "monthLoanRub": 1,
+      "monthBought": 1,
       "monthRepayRub": 1,
       "startBasket": "$startBasket1.startBasket",
       "endBasket": "$monthTradeBalance1.endBasket",
+      "percReceived": 1,
       "monthExpenses": 1
     }
   },
@@ -670,7 +703,9 @@
       "_id": "$branch",
       "monthlyReports": {
         "$push": {
+          "monthPawned": "$monthPawned",
           "monthLoanRub": "$monthLoanRub",
+          "monthBought": "$monthBought",
           "monthRepayRub": "$monthRepayRub",
           "monthExpenses": "$monthExpenses",
           "month": "$month",
@@ -686,6 +721,7 @@
           "cashboxStartMorning": "$cashboxStartMorning",
           "cashboxEndMorning": "$cashboxEndMorning",
           "endBasket": "$endBasket",
+          "percReceived": "$percReceived",
           "startBasket": {
             "$ifNull": [
               "$startBasket",
