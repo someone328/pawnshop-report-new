@@ -107,7 +107,7 @@ Content-Type: application/json
 
 ###
 
-GET http://{{host}}:8181/protected/v1/statistics
+GET http://{{host}}:8181/protected/v1/statistics/2019
 Accept: */*
 Authorization: Bearer {{auth_token}}
 Cache-Control: no-cache

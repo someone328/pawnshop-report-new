@@ -68,12 +68,12 @@ public class CrudVerticle extends AbstractVerticle {
                         error -> log.error("crud error", error));
         vertx
                 .eventBus()
-                .consumer("crud.get")
+                .<JsonObject>consumer("crud.get")
                 .toFlowable()
                 .flatMap(
                         message ->
                                 client
-                                        .findBatch(message.headers().get("objectType"), (JsonObject) message.body())
+                                        .findBatch(message.headers().get("objectType"), message.body())
                                         .toFlowable()
                                         /*.map(
                                                 object -> {
@@ -81,7 +81,7 @@ public class CrudVerticle extends AbstractVerticle {
                                                     return object;
                                                 })*/
                                         .map(this::GetInterceptor)
-                                        .collectInto(new JsonArray(), (array, object) -> array.add(object))
+                                        .collectInto(new JsonArray(), JsonArray::add)
                                         .doOnError(
                                                 error -> {
                                                     log.error("crud GET error", error);

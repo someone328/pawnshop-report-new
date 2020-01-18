@@ -40,7 +40,7 @@ public class CalculateDynamicsVerticle extends AbstractVerticle {
                                             .setSort(new JsonObject().put("date", 1))
                                             .setLimit(500))
 
-                                    .flatMapObservable(source -> Observable.fromIterable(source))
+                                    .flatMapObservable(Observable::fromIterable)
                                     .map(jo -> jo.mapTo(Report.class))
                                     .reduceWith(ReportCalculations::new, this::calculateReportInfo)
                                     .flatMapCompletable(calculations -> {
