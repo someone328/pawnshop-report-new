@@ -218,6 +218,10 @@ public class CrudHandler implements Handler<RoutingContext> {
         ROLE(Map.of(
                 PUT, new String[]{"admin"},
                 GET, new String[]{"admin"},
+                DELETE, new String[]{"admin"})),
+        LEGALPARTY(Map.of(
+                PUT, new String[]{"admin"},
+                GET, new String[]{"admin"},
                 DELETE, new String[]{"admin"}));
 
         private Map<Operarions, String[]> permissions;
