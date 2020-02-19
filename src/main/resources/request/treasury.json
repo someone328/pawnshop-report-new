@@ -1,0 +1,215 @@
+[
+  {
+    "$match": {
+      "date": {
+        "$gte": 1546387199000,
+        "$lt": 1546473599000
+      }
+    }
+  },
+  {
+    "$project": {
+      "_id": 1,
+      "branch": 1,
+      "loanedRub": 1,
+      "repayedRub": 1,
+      "cashboxEvening": 1
+    }
+  },
+  {
+    "$lookup": {
+      "from": "branch",
+      "let": {
+        "id": "$branch",
+        "repayedRub": "$repayedRub",
+        "loanedRub": "$loanedRub",
+        "cashbox": "$cashboxEvening"
+      },
+      "pipeline": [
+        {
+          "$match": {
+            "$expr": {
+              "$eq": [
+                "$_id",
+                "$$id"
+              ]
+            }
+          }
+        },
+        {
+          "$project": {
+            "_id": 0,
+            "name": 1,
+            "legalParty": 1,
+            "loanedToday": {
+              "$ifNull": [
+                "$$loanedRub",
+                0
+              ]
+            },
+            "repayedToday": {
+              "$ifNull": [
+                "$$repayedRub",
+                0
+              ]
+            },
+            "balance": {
+              "$subtract": [
+                {
+                  "$toDouble": {
+                    "$ifNull": [
+                      "$$loanedRub",
+                      0
+                    ]
+                  }
+                },
+                {
+                  "$toDouble": {
+                    "$ifNull": [
+                      "$$repayedRub",
+                      0
+                    ]
+                  }
+                }
+              ]
+            },
+            "cashbox": {
+              "$ifNull": [
+                "$$cashbox",
+                0
+              ]
+            },
+            "normative": {
+              "$ifNull": [
+                "$normative",
+                0
+              ]
+            },
+            "difference": {
+              "$subtract": [
+                {
+                  "$toDouble": {
+                    "$ifNull": [
+                      "$normative",
+                      0
+                    ]
+                  }
+                },
+                {
+                  "$toDouble": {
+                    "$ifNull": [
+                      "$$cashbox",
+                      0
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "as": "data"
+    }
+  },
+  {
+    "$unwind": "$data"
+  },
+  {
+    "$lookup": {
+      "from": "legalparty",
+      "localField": "data.legalParty",
+      "foreignField": "_id",
+      "as": "legal"
+    }
+  },
+  {
+    "$unwind": "$legal"
+  },
+  {
+    "$project": {
+      "_id": 1,
+      "branch": 1,
+      "name": "$data.name",
+      "legalParty": "$data.legalParty",
+      "legalName": "$legal.name",
+      "loanedToday": "$data.loanedToday",
+      "repayedToday": "$data.repayedToday",
+      "balance": "$data.balance",
+      "cashbox": "$data.cashbox",
+      "normative": "$data.normative",
+      "difference": "$data.difference"
+    }
+  },
+  {
+    "$sort": {
+      "name": 1
+    }
+  },
+  {
+    "$group": {
+      "_id": "$legalParty",
+      "legalParty": {
+        "$first": "$legalName"
+      },
+      "loanedTodaySum": {
+        "$sum": {
+          "$toDouble": "$loanedToday"
+        }
+      },
+      "repayedTodaySum": {
+        "$sum": {
+          "$toDouble": "$repayedToday"
+        }
+      },
+      "balanceSum": {
+        "$sum": {
+          "$toDouble": "$balance"
+        }
+      },
+      "cashboxSum": {
+        "$sum": {
+          "$toDouble": "$cashbox"
+        }
+      },
+      "normativeSum": {
+        "$sum": {
+          "$toDouble": "$normative"
+        }
+      },
+      "differenceSum": {
+        "$sum": {
+          "$toDouble": "$difference"
+        }
+      },
+      "reports": {
+        "$push": {
+          "branch": "$branch",
+          "name": "$name",
+          "loanedToday": {
+            "$toDouble": "$loanedToday"
+          },
+          "repayedToday": {
+            "$toDouble": "$repayedToday"
+          },
+          "balance": {
+            "$toDouble": "$balance"
+          },
+          "cashbox": {
+            "$toDouble": "$cashbox"
+          },
+          "normative": {
+            "$toDouble": "$normative"
+          },
+          "difference": {
+            "$toDouble": "$difference"
+          }
+        }
+      }
+    }
+  },
+  {
+    "$sort": {
+      "legalParty": 1
+    }
+  }
+]

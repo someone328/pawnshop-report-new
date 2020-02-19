@@ -29,6 +29,14 @@ Content-Type: application/json
 
 ###
 
+GET http://{{host}}:8181/protected/v1/treasuryReport/1546387199000
+Accept: */*
+Authorization: Bearer {{auth_token}}
+Cache-Control: no-cache
+Content-Type: application/json
+
+###
+
 POST http://{{host}}:8181/protected/v1/crud/report/put
 Accept: */*
 Authorization: Bearer {{auth_token}}
