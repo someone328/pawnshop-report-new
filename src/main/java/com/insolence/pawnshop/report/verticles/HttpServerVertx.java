@@ -60,6 +60,7 @@ public class HttpServerVertx extends AbstractVerticle {
         router.post("/protected/v1/crud/report/get/previous").handler(new FindPreviousReportHandler());
         /** new report */
         router.post("/protected/v1/calculateDynamics").handler(new CreateNewReportHandler());
+        router.get("/protected/v1/branchWithUsers").handler(new BranchWithUsersHandler());
         router.get("/protected/v1/statistics/:year").handler(new StatisticsHandler());
         router.get("/protected/v1/treasuryReport/:timestamp").handler(new TreasuryHandler());
         router.get("/protected/v1/availableYears").handler(new AvailableYearsHandler());

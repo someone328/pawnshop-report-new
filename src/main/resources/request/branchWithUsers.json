@@ -1,0 +1,16 @@
+[
+  {
+    "$lookup": {
+      "from": "user",
+      "localField": "_id",
+      "foreignField": "branches",
+      "as": "users"
+    }
+  },
+  {
+    "$sort": {
+      "name": 1,
+      "users.name": 1
+    }
+  }
+]
