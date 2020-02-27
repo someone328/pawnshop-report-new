@@ -2,8 +2,8 @@
   {
     "$match": {
       "date": {
-        "$gte": 1546387199000,
-        "$lt": 1546473599000
+        "$gte": 1582156800000,
+        "$lt": 1582243200000
       }
     }
   },
@@ -210,6 +210,49 @@
   {
     "$sort": {
       "legalParty": 1
+    }
+  },
+  {
+    "$lookup": {
+      "from": "treasury",
+      "let": {
+        "lpID": "$_id"
+      },
+      "pipeline": [
+        {
+          "$match": {
+            "$expr": {
+              "$and": [
+                {
+                  "$eq": [
+                    "$$lpID",
+                    "$legalPartyId"
+                  ]
+                },
+                {
+                  "$lt": [
+                    "$date",
+                    1582243200000
+                  ]
+                },
+                {
+                  "$gte": [
+                    "$date",
+                    1582156800000
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "as": "treasury"
+    }
+  },
+  {
+    "$unwind": {
+      "path": "$treasury",
+      "preserveNullAndEmptyArrays": true
     }
   }
 ]

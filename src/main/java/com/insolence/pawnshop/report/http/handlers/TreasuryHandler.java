@@ -230,6 +230,49 @@ public class TreasuryHandler implements Handler<RoutingContext> {
                     "    \"$sort\": {\n" +
                     "      \"legalParty\": 1\n" +
                     "    }\n" +
+                    "  },\n" +
+                    "  {\n" +
+                    "    \"$lookup\": {\n" +
+                    "      \"from\": \"treasury\",\n" +
+                    "      \"let\": {\n" +
+                    "        \"lpID\": \"$_id\"\n" +
+                    "      },\n" +
+                    "      \"pipeline\": [\n" +
+                    "        {\n" +
+                    "          \"$match\": {\n" +
+                    "            \"$expr\": {\n" +
+                    "              \"$and\": [\n" +
+                    "                {\n" +
+                    "                  \"$eq\": [\n" +
+                    "                    \"$$lpID\",\n" +
+                    "                    \"$legalPartyId\"\n" +
+                    "                  ]\n" +
+                    "                },\n" +
+                    "                {\n" +
+                    "                  \"$gte\": [\n" +
+                    "                    \"$date\",\n" +
+                    "                    %s\n" +
+                    "                  ]\n" +
+                    "                },\n" +
+                    "                {\n" +
+                    "                  \"$lt\": [\n" +
+                    "                    \"$date\",\n" +
+                    "                    %s\n" +
+                    "                  ]\n" +
+                    "                }\n" +
+                    "              ]\n" +
+                    "            }\n" +
+                    "          }\n" +
+                    "        }\n" +
+                    "      ],\n" +
+                    "      \"as\": \"treasury\"\n" +
+                    "    }\n" +
+                    "  },\n" +
+                    "  {\n" +
+                    "    \"$unwind\": {\n" +
+                    "      \"path\": \"$treasury\",\n" +
+                    "      \"preserveNullAndEmptyArrays\": true\n" +
+                    "    }\n" +
                     "  }\n" +
                     "]";
     private EventBus bus;
@@ -253,7 +296,7 @@ public class TreasuryHandler implements Handler<RoutingContext> {
         long nextDayStartMillis = requestedDate.plusDays(1).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli();
         System.out.println(currentDateStartMillis);
         System.out.println(nextDayStartMillis);
-        JsonArray pipeline = new JsonArray(String.format(treasuryRequest, currentDateStartMillis, nextDayStartMillis));
+        JsonArray pipeline = new JsonArray(String.format(treasuryRequest, currentDateStartMillis, nextDayStartMillis, currentDateStartMillis, nextDayStartMillis));
         AggregateOptions aggregateOptions = new AggregateOptions();
         aggregateOptions.setAllowDiskUse(true);
         aggregateOptions.setMaxAwaitTime(0L);
@@ -262,10 +305,13 @@ public class TreasuryHandler implements Handler<RoutingContext> {
                 .toObservable()
                 .reduce(new JsonArray(), (arr, br) -> arr.add(JsonObject.mapFrom(br)))
                 .subscribe(
-                        success -> rc.response()
-                                .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
-                                .setChunked(true)
-                                .end(success.encodePrettily()),
+                        success -> {
+                            System.out.println(success);
+                            rc.response()
+                                    .putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
+                                    .setChunked(true)
+                                    .end(success.encodePrettily());
+                        },
                         error -> log.error("Что-то пошло не так во время расчёта отчёта казначейства", error)
                 );
     }

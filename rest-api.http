@@ -90,15 +90,12 @@ Content-Type: application/json
 
 ###
 
-POST http://{{host}}:8181/protected/v1/crud/report/get/previous
+POST http://{{host}}:8181/protected/v1/crud/treasury/get
 Accept: */*
 Authorization: Bearer {{auth_token}}
 Cache-Control: no-cache
 Content-Type: application/json
 
-{
-  "reportId": "5d40b17014ce4a692cce08af"
-}
 
 ###
 

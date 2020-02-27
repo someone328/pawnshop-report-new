@@ -70,10 +70,17 @@ public class CrudHandler implements Handler<RoutingContext> {
                                 DeliveryOptions deliveryOptions = new DeliveryOptions().addHeader("objectType", objectType);
                                 JsonObject jsonBody = rc.getBodyAsJson();
                                 switch (operationTypeEnum) {
-                                    case PUT -> processPutOperation(rc, deliveryOptions, jsonBody);
-                                    case GET -> processGetOperation(rc, deliveryOptions, jsonBody);
-                                    case DELETE -> processDeleteOperation(rc, deliveryOptions, jsonBody);
-                                    default -> rc.response().setStatusCode(400).end("Unsupported operationType type " + operationType);
+                                    case PUT:
+                                        processPutOperation(rc, deliveryOptions, jsonBody);
+                                        break;
+                                    case GET:
+                                        processGetOperation(rc, deliveryOptions, jsonBody);
+                                        break;
+                                    case DELETE:
+                                        processDeleteOperation(rc, deliveryOptions, jsonBody);
+                                        break;
+                                    default:
+                                        rc.response().setStatusCode(400).end("Unsupported operationType type " + operationType);
                                 }
                             }
                         },
@@ -222,8 +229,11 @@ public class CrudHandler implements Handler<RoutingContext> {
         LEGALPARTY(Map.of(
                 PUT, new String[]{"admin"},
                 GET, new String[]{"admin"},
+                DELETE, new String[]{"admin"})),
+        TREASURY(Map.of(
+                PUT, new String[]{"admin"},
+                GET, new String[]{"admin"},
                 DELETE, new String[]{"admin"}));
-
         private Map<Operarions, String[]> permissions;
     }
 

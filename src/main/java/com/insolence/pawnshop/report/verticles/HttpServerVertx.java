@@ -23,12 +23,6 @@ public class HttpServerVertx extends AbstractVerticle {
         HttpServer httpServer = vertx.createHttpServer();
         Router router = Router.router(vertx);
         router.post().handler(BodyHandler.create());
-    /*router.route().handler(CookieHandler.create());
-    router
-        .route()
-        .handler(
-            SessionHandler.create(
-                SessionStore.newInstance(LocalSessionStore.create(vertx).getDelegate())));*/
         router
                 .route()
                 .handler(
