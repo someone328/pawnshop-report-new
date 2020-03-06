@@ -151,6 +151,7 @@ public class TreasuryHandler implements Handler<RoutingContext> {
                     "      \"name\": \"$data.name\",\n" +
                     "      \"legalParty\": \"$data.legalParty\",\n" +
                     "      \"legalName\": \"$legal.name\",\n" +
+                    "      \"legalNormative\": \"$legal.normative\",\n" +
                     "      \"loanedToday\": \"$data.loanedToday\",\n" +
                     "      \"repayedToday\": \"$data.repayedToday\",\n" +
                     "      \"balance\": \"$data.balance\",\n" +
@@ -169,6 +170,9 @@ public class TreasuryHandler implements Handler<RoutingContext> {
                     "      \"_id\": \"$legalParty\",\n" +
                     "      \"legalParty\": {\n" +
                     "        \"$first\": \"$legalName\"\n" +
+                    "      },\n" +
+                    "      \"legalNormative\": {\n" +
+                    "        \"$first\": {\"$toDouble\":\"$legalNormative\"}\n" +
                     "      },\n" +
                     "      \"loanedTodaySum\": {\n" +
                     "        \"$sum\": {\n" +
@@ -274,7 +278,7 @@ public class TreasuryHandler implements Handler<RoutingContext> {
                     "      \"preserveNullAndEmptyArrays\": true\n" +
                     "    }\n" +
                     "  }\n" +
-                    "]";
+                    "]\n";
     private EventBus bus;
 
     private MongoClient client;

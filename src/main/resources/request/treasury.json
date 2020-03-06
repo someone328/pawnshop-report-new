@@ -2,8 +2,8 @@
   {
     "$match": {
       "date": {
-        "$gte": 1582156800000,
-        "$lt": 1582243200000
+        "$gte": 1583452800000,
+        "$lt": 1583539200000
       }
     }
   },
@@ -132,6 +132,7 @@
       "name": "$data.name",
       "legalParty": "$data.legalParty",
       "legalName": "$legal.name",
+      "legalNormative": "$legal.normative",
       "loanedToday": "$data.loanedToday",
       "repayedToday": "$data.repayedToday",
       "balance": "$data.balance",
@@ -150,6 +151,9 @@
       "_id": "$legalParty",
       "legalParty": {
         "$first": "$legalName"
+      },
+      "legalNormative": {
+        "$first": "$legalNormative"
       },
       "loanedTodaySum": {
         "$sum": {
@@ -230,15 +234,15 @@
                   ]
                 },
                 {
-                  "$lt": [
+                  "$gte": [
                     "$date",
-                    1582243200000
+                    1583452800000
                   ]
                 },
                 {
-                  "$gte": [
+                  "$lt": [
                     "$date",
-                    1582156800000
+                    1583539200000
                   ]
                 }
               ]
