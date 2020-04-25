@@ -4,6 +4,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.mongo.AggregateOptions;
 import io.vertx.reactivex.ext.mongo.MongoClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
 
@@ -32,11 +33,22 @@ public class BranchWithUsersHandler implements Handler<RoutingContext> {
             client = MongoClient.createShared(rc.vertx(), new JsonObject(), "pawnshop-report");
         }
         JsonArray pipeline = new JsonArray(branchWithUsersQuery);
-        client.aggregate(CrudHandler.SupportedObjectTypes.BRANCH.name().toLowerCase(), pipeline)
+        AggregateOptions options = new AggregateOptions()
+                .setBatchSize(10000)
+                .setMaxAwaitTime(0)
+                .setAllowDiskUse(true);
+        client.aggregateWithOptions(CrudHandler.SupportedObjectTypes.BRANCH.name().toLowerCase(), pipeline, options)
                 .toObservable()
                 .reduce(new JsonArray(), (arr, ya) -> arr.add(ya))
                 .subscribe(
-                        data -> rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
-                                .setChunked(true).end(data.toString()));
+                        data -> {
+                            rc.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
+                                    .setChunked(true).end(data.toString());
+                        },
+                        error -> {
+                            System.out.println(error);
+                        }
+                );
+
     }
 }
