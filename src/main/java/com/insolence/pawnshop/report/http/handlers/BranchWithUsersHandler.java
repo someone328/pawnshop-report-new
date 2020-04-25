@@ -32,6 +32,7 @@ public class BranchWithUsersHandler implements Handler<RoutingContext> {
         if (client == null) {
             client = MongoClient.createShared(rc.vertx(), new JsonObject(), "pawnshop-report");
         }
+        
         JsonArray pipeline = new JsonArray(branchWithUsersQuery);
         AggregateOptions options = new AggregateOptions()
                 .setBatchSize(10000)
