@@ -79,8 +79,9 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-mongo-client</artifactId>
-            <version>3.8.5</version>
+            <version>3.9.0</version>
         </dependency>
+
         <!-- <dependency> <groupId>io.vertx</groupId> <artifactId>vertx-sockjs-service-proxy</artifactId>
             </dependency> -->
         <!-- <dependency> <groupId>io.vertx</groupId> <artifactId>vertx-junit5</artifactId>
