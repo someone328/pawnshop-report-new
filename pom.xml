@@ -145,7 +145,7 @@
                 <version>1.4.0</version>
                 <configuration>
                     <from>
-                        <image>openjdk:12-alpine</image>
+                        <image>openjdk:15-alpine</image>
                     </from>
                     <to>
                         <image>docker.io/someone328/pawnshop-report</image>
@@ -234,8 +234,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>12</source>
-                    <target>12</target>
+                    <source>15</source>
+                    <target>15</target>
                     <compilerArgument>--enable-preview</compilerArgument>
                 </configuration>
             </plugin>
