@@ -1,0 +1,21 @@
+image: maven:3-openjdk-15
+
+stages:
+  - build-image
+
+variables:
+  MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+
+cache:
+  paths:
+    - .m2/repository/
+    - target/
+
+build-image:
+  stage: build-image
+  script:
+    - echo $CI_JOB_STAGE
+    - echo $DOCKER_USERNAME
+    - echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!s" 
+    - mvn $MAVEN_CLI_OPTS clean compile jib:build -Djib.to.auth.username=$DOCKER_USERNAME -Djib.to.auth.password=$DOCKER_PASSWORD
