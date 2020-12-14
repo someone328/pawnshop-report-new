@@ -37,8 +37,8 @@ public class CalculateDynamicsVerticle extends AbstractVerticle {
                                     "report",
                                     new JsonObject().put("branch", branchId).put("date", new JsonObject().put("$lt", reportDate)),
                                     new FindOptions()
-                                            .setSort(new JsonObject().put("date", 1)))
-                                          
+                                            .setSort(new JsonObject().put("date", 1))
+                                            .setLimit(1000))
 
                                     .flatMapObservable(source -> Observable.fromIterable(source))
                                     .map(jo -> jo.mapTo(Report.class))
