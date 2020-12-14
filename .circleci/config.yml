@@ -18,7 +18,7 @@ workflows:
 jobs:
   unit-test:
     docker:
-      - image: codeaches/openjdk:12-jdk
+      - image: cimg/openjdk:15.0.1
     working_directory: ~/repo
     steps:
       - checkout
