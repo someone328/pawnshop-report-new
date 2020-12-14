@@ -10,7 +10,6 @@ import io.vertx.ext.mongo.FindOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.ext.mongo.MongoClient;
 import lombok.extern.slf4j.Slf4j;
-import org.mvel2.util.Make;
 
 import java.math.BigDecimal;
 
@@ -18,7 +17,7 @@ import static com.insolence.pawnshop.report.util.BigDecimalUtils.noNull;
 
 @Slf4j
 public class CalculateDynamicsVerticle extends AbstractVerticle {
-    public static final Make.String DYNAMICS_CALCULATIONS = "dynamics-calculations";
+    public static final String DYNAMICS_CALCULATIONS = "dynamics-calculations";
     private MongoClient client;
 
     @Override
@@ -32,13 +31,14 @@ public class CalculateDynamicsVerticle extends AbstractVerticle {
                 .flatMapCompletable(
                         message -> {
                             var bodyAsJson = message.body();
-                            Make.String branchId = bodyAsJson.getString("branchId");
+                            String branchId = bodyAsJson.getString("branchId");
                             Long reportDate = Long.valueOf(bodyAsJson.getString("reportDate"));
                             return client.rxFindWithOptions(
                                     "report",
                                     new JsonObject().put("branch", branchId).put("date", new JsonObject().put("$lt", reportDate)),
                                     new FindOptions()
                                             .setSort(new JsonObject().put("date", 1))
+                                          
 
                                     .flatMapObservable(source -> Observable.fromIterable(source))
                                     .map(jo -> jo.mapTo(Report.class))
